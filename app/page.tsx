@@ -2,13 +2,15 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { useAuth } from '@/hooks/useAuth';
 import { 
   SunIcon, 
   BoltIcon, 
   CurrencyDollarIcon,
   ChatBubbleLeftRightIcon,
   DocumentTextIcon,
-  UserGroupIcon
+  UserGroupIcon,
+  ArrowRightIcon
 } from '@heroicons/react/24/outline';
 
 const features = [
@@ -42,6 +44,19 @@ const stats = [
 ];
 
 export default function HomePage() {
+  const { user, profile } = useAuth();
+
+  const getDashboardLink = () => {
+    switch (profile?.role) {
+      case 'admin':
+        return '/admin';
+      case 'seller':
+        return '/seller';
+      default:
+        return '/dashboard';
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-blue-50">
       {/* Hero Section */}
@@ -75,18 +90,30 @@ export default function HomePage() {
               transition={{ duration: 0.8, delay: 0.2 }}
               className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-6"
             >
-              <Link
-                href="/auth/signup?role=user"
-                className="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:from-orange-600 hover:to-orange-700 transition-all transform hover:scale-105 shadow-lg"
-              >
-                Get Solar Quote
-              </Link>
-              <Link
-                href="/auth/signup?role=seller"
-                className="bg-white text-orange-600 border-2 border-orange-600 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-orange-50 transition-all transform hover:scale-105 shadow-lg"
-              >
-                Join as Seller
-              </Link>
+              {user ? (
+                <Link
+                  href={getDashboardLink()}
+                  className="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:from-orange-600 hover:to-orange-700 transition-all transform hover:scale-105 shadow-lg flex items-center space-x-2"
+                >
+                  <span>Go to Dashboard</span>
+                  <ArrowRightIcon className="h-5 w-5" />
+                </Link>
+              ) : (
+                <>
+                  <Link
+                    href="/auth/signup?role=user"
+                    className="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:from-orange-600 hover:to-orange-700 transition-all transform hover:scale-105 shadow-lg"
+                  >
+                    Get Solar Quote
+                  </Link>
+                  <Link
+                    href="/auth/signup?role=seller"
+                    className="bg-white text-orange-600 border-2 border-orange-600 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-orange-50 transition-all transform hover:scale-105 shadow-lg"
+                  >
+                    Join as Seller
+                  </Link>
+                </>
+              )}
             </motion.div>
           </div>
         </div>
@@ -169,7 +196,7 @@ export default function HomePage() {
               href="/auth/signup"
               className="bg-white text-orange-600 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-50 transition-all transform hover:scale-105 shadow-lg"
             >
-              Get Started Now
+              {user ? 'Go to Dashboard' : 'Get Started Now'}
             </Link>
           </motion.div>
         </div>
