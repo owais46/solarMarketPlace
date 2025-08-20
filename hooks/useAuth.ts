@@ -44,7 +44,32 @@ export function useAuth() {
         .eq('id', userId)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        // If profile doesn't exist, create it from auth user metadata
+        if (error.code === 'PGRST116') {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            const { data: newProfile, error: insertError } = await supabase
+              .from('users')
+              .insert([
+                {
+                  id: user.id,
+                  email: user.email!,
+                  full_name: user.user_metadata?.full_name || 'User',
+                  role: user.user_metadata?.role || 'user'
+                }
+              ])
+              .select()
+              .single();
+            
+            if (!insertError && newProfile) {
+              setProfile(newProfile);
+              return;
+            }
+          }
+        }
+        throw error;
+      }
       setProfile(data);
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -66,7 +91,7 @@ export function useAuth() {
 
     // Create profile
     if (data.user) {
-      await supabase.from('users').insert([
+      const { error: profileError } = await supabase.from('users').insert([
         {
           id: data.user.id,
           email: data.user.email!,
@@ -74,6 +99,12 @@ export function useAuth() {
           role: userData.role
         }
       ]);
+      
+      if (profileError) {
+        console.error('Error creating user profile:', profileError);
+        // Don't throw here as the auth user was created successfully
+        // The profile will be created on first login attempt
+      }
     }
 
     return data;
