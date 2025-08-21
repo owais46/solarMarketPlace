@@ -56,6 +56,7 @@ export default function UserDashboard() {
         pendingQuotes: quotes.filter(q => q.status === 'pending').length,
         acceptedQuotes: quotes.filter(q => q.status === 'accepted').length,
         unreadMessages: messages.filter(m => 
+          //@ts-ignore
           m.conversation?.user_id === profile?.id
         ).length
       });
