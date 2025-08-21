@@ -127,10 +127,10 @@ export default function UserDashboard() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
           >
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
               Welcome back, {profile?.full_name}!
             </h1>
-            <p className="text-gray-600">
+            <p className="text-gray-600 dark:text-gray-400">
               Manage your solar journey from your personalized dashboard
             </p>
           </motion.div>
@@ -144,12 +144,12 @@ export default function UserDashboard() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: index * 0.1 }}
-              className="bg-white rounded-xl shadow-lg p-6 border border-gray-100"
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-100 dark:border-gray-700"
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">{card.title}</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{card.title}</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
                     {loading ? '—' : card.value}
                   </p>
                 </div>
@@ -163,7 +163,7 @@ export default function UserDashboard() {
 
         {/* Quick Actions */}
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Quick Actions</h2>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Quick Actions</h2>
           <div className="grid md:grid-cols-3 gap-6">
             {quickActions.map((action, index) => (
               <motion.div
@@ -174,15 +174,15 @@ export default function UserDashboard() {
               >
                 <Link
                   href={action.href}
-                  className="block bg-white rounded-xl shadow-lg p-6 border border-gray-100 hover:shadow-xl transition-shadow group"
+                  className="block bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-shadow group"
                 >
                   <div className={`inline-flex p-3 rounded-lg bg-gradient-to-r ${action.color} mb-4`}>
                     <action.icon className="h-6 w-6 text-white" />
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2 group-hover:text-orange-600 transition-colors">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">
                     {action.title}
                   </h3>
-                  <p className="text-gray-600">{action.description}</p>
+                  <p className="text-gray-600 dark:text-gray-400">{action.description}</p>
                 </Link>
               </motion.div>
             ))}
@@ -194,46 +194,46 @@ export default function UserDashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4 }}
-          className="bg-white rounded-xl shadow-lg p-6 border border-gray-100"
+          className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-100 dark:border-gray-700"
         >
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-gray-900">Recent Activity</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Recent Activity</h2>
             <Link
               href="/activity"
-              className="text-orange-600 hover:text-orange-700 text-sm font-medium"
+              className="text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 text-sm font-medium"
             >
               View All
             </Link>
           </div>
           
           <div className="space-y-4">
-            <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-              <div className="bg-blue-100 p-2 rounded-lg">
-                <DocumentTextIcon className="h-4 w-4 text-blue-600" />
+            <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <div className="bg-blue-100 dark:bg-blue-900 p-2 rounded-lg">
+                <DocumentTextIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
               </div>
               <div className="flex-1">
-                <p className="text-sm text-gray-900">Bill uploaded successfully</p>
-                <p className="text-xs text-gray-500">2 hours ago</p>
+                <p className="text-sm text-gray-900 dark:text-white">Bill uploaded successfully</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">2 hours ago</p>
               </div>
             </div>
             
-            <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-              <div className="bg-green-100 p-2 rounded-lg">
-                <SunIcon className="h-4 w-4 text-green-600" />
+            <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <div className="bg-green-100 dark:bg-green-900 p-2 rounded-lg">
+                <SunIcon className="h-4 w-4 text-green-600 dark:text-green-400" />
               </div>
               <div className="flex-1">
-                <p className="text-sm text-gray-900">New quote received from SolarPro</p>
-                <p className="text-xs text-gray-500">5 hours ago</p>
+                <p className="text-sm text-gray-900 dark:text-white">New quote received from SolarPro</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">5 hours ago</p>
               </div>
             </div>
             
-            <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-              <div className="bg-purple-100 p-2 rounded-lg">
-                <ChatBubbleLeftRightIcon className="h-4 w-4 text-purple-600" />
+            <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <div className="bg-purple-100 dark:bg-purple-900 p-2 rounded-lg">
+                <ChatBubbleLeftRightIcon className="h-4 w-4 text-purple-600 dark:text-purple-400" />
               </div>
               <div className="flex-1">
-                <p className="text-sm text-gray-900">New message from installer</p>
-                <p className="text-xs text-gray-500">1 day ago</p>
+                <p className="text-sm text-gray-900 dark:text-white">New message from installer</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">1 day ago</p>
               </div>
             </div>
           </div>
