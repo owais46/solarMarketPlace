@@ -25,7 +25,7 @@ export default function SignInPage() {
     try {
       await signIn(formData.email, formData.password);
       toast.success('Signed in successfully!');
-      router.push('/dashboard');
+      router.push('/');
     } catch (error: any) {
       toast.error(error.message || 'Error signing in');
     } finally {
