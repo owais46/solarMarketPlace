@@ -64,6 +64,7 @@ export default function SellerDashboard() {
         completedSales: completedQuotes.length,
         totalRevenue,
         unreadMessages: messages.filter(m => 
+          //@ts-ignore
           m.conversation?.seller_id === profile?.id
         ).length
       });
