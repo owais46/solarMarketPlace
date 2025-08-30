@@ -304,7 +304,7 @@ export default function SellerQuotesPage() {
                           <span>Edit Quote (${request.my_response.estimated_cost.toLocaleString()})</span>
                         </Link>
                         <Link
-                          href={`/chat?user=${request.user_id}`}
+                          href={`/chat?user=${request.user_id}&seller=${profile?.id}`}
                           className="bg-green-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-600 transition-colors flex items-center space-x-1"
                         >
                           <ChatBubbleLeftRightIcon className="h-4 w-4" />

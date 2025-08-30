@@ -143,23 +143,38 @@ export default function ChatPage() {
 
   const startConversationWithSeller = async (sellerId: string) => {
     try {
+      console.log('Starting conversation with seller:', sellerId);
+      
       // Check if conversation already exists
       const { data: existingConv } = await supabase
         .from('conversations')
-        .select('*')
+        .select(`
+          *,
+          user:users!conversations_user_id_fkey(id, full_name, avatar_url),
+          seller:users!conversations_seller_id_fkey(id, full_name, avatar_url)
+        `)
         .eq('user_id', profile?.id)
         .eq('seller_id', sellerId)
         .single();
 
       if (existingConv) {
+        console.log('Found existing conversation:', existingConv.id);
         // Find and select existing conversation
-        const conv = conversations.find(c => c.id === existingConv.id);
-        if (conv) {
-          setSelectedConversation(conv);
-        }
+        const convWithDetails = { ...existingConv, unread_count: 0 };
+        setSelectedConversation(convWithDetails);
+        
+        // Add to conversations list if not already there
+        setConversations(prev => {
+          const exists = prev.find(c => c.id === existingConv.id);
+          if (!exists) {
+            return [convWithDetails, ...prev];
+          }
+          return prev;
+        });
         return;
       }
 
+      console.log('Creating new conversation...');
       // Create new conversation
       const { data: newConv, error } = await supabase
         .from('conversations')
@@ -175,35 +190,51 @@ export default function ChatPage() {
         .single();
 
       if (error) throw error;
+      console.log('New conversation created:', newConv.id);
 
       const newConversation = { ...newConv, unread_count: 0 };
       setConversations(prev => [newConversation, ...prev]);
       setSelectedConversation(newConversation);
     } catch (error: any) {
       console.error('Error starting conversation:', error);
-      toast.error('Failed to start conversation');
+      toast.error(`Failed to start conversation: ${error.message}`);
     }
   };
 
   const startConversationWithUser = async (userId: string) => {
     try {
+      console.log('Starting conversation with user:', userId);
+      
       // Check if conversation already exists
       const { data: existingConv } = await supabase
         .from('conversations')
-        .select('*')
+        .select(`
+          *,
+          user:users!conversations_user_id_fkey(id, full_name, avatar_url),
+          seller:users!conversations_seller_id_fkey(id, full_name, avatar_url)
+        `)
         .eq('user_id', userId)
         .eq('seller_id', profile?.id)
         .single();
 
       if (existingConv) {
+        console.log('Found existing conversation:', existingConv.id);
         // Find and select existing conversation
-        const conv = conversations.find(c => c.id === existingConv.id);
-        if (conv) {
-          setSelectedConversation(conv);
-        }
+        const convWithDetails = { ...existingConv, unread_count: 0 };
+        setSelectedConversation(convWithDetails);
+        
+        // Add to conversations list if not already there
+        setConversations(prev => {
+          const exists = prev.find(c => c.id === existingConv.id);
+          if (!exists) {
+            return [convWithDetails, ...prev];
+          }
+          return prev;
+        });
         return;
       }
 
+      console.log('Creating new conversation...');
       // Create new conversation
       const { data: newConv, error } = await supabase
         .from('conversations')
@@ -219,13 +250,14 @@ export default function ChatPage() {
         .single();
 
       if (error) throw error;
+      console.log('New conversation created:', newConv.id);
 
       const newConversation = { ...newConv, unread_count: 0 };
       setConversations(prev => [newConversation, ...prev]);
       setSelectedConversation(newConversation);
     } catch (error: any) {
       console.error('Error starting conversation:', error);
-      toast.error('Failed to start conversation');
+      toast.error(`Failed to start conversation: ${error.message}`);
     }
   };
 
@@ -234,6 +266,7 @@ export default function ChatPage() {
     
     if (!newMessage.trim() || !selectedConversation) return;
 
+    console.log('Sending message to conversation:', selectedConversation.id);
     setSendingMessage(true);
 
     try {
@@ -250,7 +283,12 @@ export default function ChatPage() {
         `)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Message insert error:', error);
+        throw error;
+      }
+
+      console.log('Message sent successfully:', data.id);
 
       setMessages(prev => [...prev, data]);
       setNewMessage('');
@@ -271,7 +309,7 @@ export default function ChatPage() {
       ));
     } catch (error: any) {
       console.error('Error sending message:', error);
-      toast.error('Failed to send message');
+      toast.error(`Failed to send message: ${error.message}`);
     } finally {
       setSendingMessage(false);
     }
