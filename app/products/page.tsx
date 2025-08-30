@@ -259,6 +259,14 @@ export default function ProductsPage() {
                     <ShoppingCartIcon className="h-4 w-4" />
                     <span>Quote</span>
                   </button>
+                  
+                  <Link
+                    href={`/chat?seller=${product.seller_id}`}
+                    className="bg-blue-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-600 transition-all transform hover:scale-105 flex items-center space-x-1"
+                  >
+                    <ChatBubbleLeftRightIcon className="h-4 w-4" />
+                    <span>Chat</span>
+                  </Link>
                 </div>
 
                 {/* Specifications Preview */}

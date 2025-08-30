@@ -331,7 +331,7 @@ export default function QuotesPage() {
                                 <span>Reject</span>
                               </button>
                               <Link
-                                href={`/chat?seller=${response.seller_id}&user=${request.user_id}`}
+                                href={`/chat?seller=${response.seller_id}`}
                                 className="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors flex items-center space-x-1"
                               >
                                 <ChatBubbleLeftRightIcon className="h-4 w-4" />

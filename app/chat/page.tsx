@@ -65,8 +65,8 @@ export default function ChatPage() {
         .from('conversations')
         .select(`
           *,
-          user:users!conversations_user_id_fkey(id, full_name, avatar_url),
-          seller:users!conversations_seller_id_fkey(id, full_name, avatar_url)
+          user:users!user_id(id, full_name, avatar_url),
+          seller:users!seller_id(id, full_name, avatar_url)
         `)
         .or(`user_id.eq.${profile?.id},seller_id.eq.${profile?.id}`)
         .order('last_message_at', { ascending: false });
@@ -150,8 +150,8 @@ export default function ChatPage() {
         .from('conversations')
         .select(`
           *,
-          user:users!conversations_user_id_fkey(id, full_name, avatar_url),
-          seller:users!conversations_seller_id_fkey(id, full_name, avatar_url)
+          user:users!user_id(id, full_name, avatar_url),
+          seller:users!seller_id(id, full_name, avatar_url)
         `)
         .eq('user_id', profile?.id)
         .eq('seller_id', sellerId)
@@ -184,8 +184,8 @@ export default function ChatPage() {
         }])
         .select(`
           *,
-          user:users!conversations_user_id_fkey(id, full_name, avatar_url),
-          seller:users!conversations_seller_id_fkey(id, full_name, avatar_url)
+          user:users!user_id(id, full_name, avatar_url),
+          seller:users!seller_id(id, full_name, avatar_url)
         `)
         .single();
 
@@ -210,8 +210,8 @@ export default function ChatPage() {
         .from('conversations')
         .select(`
           *,
-          user:users!conversations_user_id_fkey(id, full_name, avatar_url),
-          seller:users!conversations_seller_id_fkey(id, full_name, avatar_url)
+          user:users!user_id(id, full_name, avatar_url),
+          seller:users!seller_id(id, full_name, avatar_url)
         `)
         .eq('user_id', userId)
         .eq('seller_id', profile?.id)
@@ -244,8 +244,8 @@ export default function ChatPage() {
         }])
         .select(`
           *,
-          user:users!conversations_user_id_fkey(id, full_name, avatar_url),
-          seller:users!conversations_seller_id_fkey(id, full_name, avatar_url)
+          user:users!user_id(id, full_name, avatar_url),
+          seller:users!seller_id(id, full_name, avatar_url)
         `)
         .single();
 
