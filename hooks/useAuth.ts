@@ -79,7 +79,9 @@ export function useAuth() {
             id: user.id,
             email: user.email!,
             full_name: user.user_metadata?.full_name || 'User',
-            role: user.user_metadata?.role || 'user'
+            role: user.user_metadata?.role || 'user',
+            phone: user.user_metadata?.phone || '',
+            address: user.user_metadata?.address || ''
           }])
           .select()
           .single();

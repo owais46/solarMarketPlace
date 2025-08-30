@@ -18,6 +18,8 @@ export const supabase = createClient(
 
 export type UserRole = 'user' | 'seller' | 'admin';
 export type QuoteStatus = 'pending' | 'accepted' | 'rejected' | 'expired';
+export type RequestStatus = 'open' | 'closed' | 'expired';
+export type ResponseStatus = 'pending' | 'accepted' | 'rejected';
 
 export interface UserProfile {
   id: string;
@@ -27,6 +29,40 @@ export interface UserProfile {
   phone?: string;
   address?: string;
   avatar_url?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface QuotationRequest {
+  id: string;
+  user_id: string;
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  house_dimensions_marla: number;
+  number_of_lights: number;
+  number_of_fans: number;
+  appliances: Record<string, number>;
+  additional_requirements?: string;
+  status: RequestStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface QuotationResponse {
+  id: string;
+  request_id: string;
+  seller_id: string;
+  title: string;
+  description?: string;
+  estimated_cost: number;
+  estimated_savings?: number;
+  installation_timeline?: string;
+  system_specifications: Record<string, any>;
+  warranty_details?: string;
+  status: ResponseStatus;
+  expires_at?: string;
   created_at: string;
   updated_at: string;
 }
