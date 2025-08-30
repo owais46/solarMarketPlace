@@ -247,7 +247,7 @@ export default function SellerQuotesPage() {
                   </div>
 
                   {/* House Details */}
-                  <div className="grid md:grid-cols-4 gap-4 mb-4">
+                  <div className="grid md:grid-cols-5 gap-4 mb-4">
                     <div>
                       <p className="text-xs text-gray-500 dark:text-gray-400">House Size</p>
                       <p className="text-sm font-medium text-gray-900 dark:text-white">{request.house_dimensions_marla} Marla</p>
@@ -259,6 +259,12 @@ export default function SellerQuotesPage() {
                     <div>
                       <p className="text-xs text-gray-500 dark:text-gray-400">Fans</p>
                       <p className="text-sm font-medium text-gray-900 dark:text-white">{request.number_of_fans}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Avg Monthly Bill</p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">
+                        ${request.avg_monthly_bill_amount?.toLocaleString() || 'N/A'}
+                      </p>
                     </div>
                     <div>
                       <p className="text-xs text-gray-500 dark:text-gray-400">Appliances</p>

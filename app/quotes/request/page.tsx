@@ -24,6 +24,7 @@ interface QuotationForm {
   houseDimensionsMarla: string;
   numberOfLights: string;
   numberOfFans: string;
+  avgMonthlyBillAmount: string;
   appliances: Record<string, string>;
   additionalRequirements: string;
 }
@@ -40,6 +41,7 @@ export default function RequestQuotePage() {
     houseDimensionsMarla: '',
     numberOfLights: '',
     numberOfFans: '',
+    avgMonthlyBillAmount: '',
     appliances: {},
     additionalRequirements: ''
   });
@@ -62,7 +64,7 @@ export default function RequestQuotePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.email || !formData.phone || !formData.address || !formData.houseDimensionsMarla) {
+    if (!formData.name || !formData.email || !formData.phone || !formData.address || !formData.houseDimensionsMarla || !formData.avgMonthlyBillAmount) {
       toast.error('Please fill in all required fields');
       return;
     }
@@ -82,6 +84,7 @@ export default function RequestQuotePage() {
             house_dimensions_marla: parseFloat(formData.houseDimensionsMarla),
             number_of_lights: parseInt(formData.numberOfLights) || 0,
             number_of_fans: parseInt(formData.numberOfFans) || 0,
+            avg_monthly_bill_amount: parseFloat(formData.avgMonthlyBillAmount),
             appliances: formData.appliances,
             additional_requirements: formData.additionalRequirements
           }
@@ -284,6 +287,26 @@ export default function RequestQuotePage() {
                     placeholder="e.g., 8"
                   />
                 </div>
+
+                <div>
+                  <label htmlFor="avgMonthlyBillAmount" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Average Monthly Bill (USD) *
+                  </label>
+                  <input
+                    id="avgMonthlyBillAmount"
+                    name="avgMonthlyBillAmount"
+                    type="number"
+                    step="0.01"
+                    required
+                    value={formData.avgMonthlyBillAmount}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    placeholder="e.g., 150.00"
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Enter your average electricity bill amount over the last 12 months
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -429,19 +452,19 @@ export default function RequestQuotePage() {
           <ul className="space-y-2 text-blue-800 dark:text-blue-200">
             <li className="flex items-center space-x-2">
               <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-              <span>Verified sellers will review your requirements</span>
+              <span>We'll calculate potential savings based on your bill amount</span>
             </li>
             <li className="flex items-center space-x-2">
               <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-              <span>You'll receive customized quotes within 24-48 hours</span>
+              <span>Match you with suitable solar installers in your area</span>
             </li>
             <li className="flex items-center space-x-2">
               <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-              <span>Compare quotes and chat directly with sellers</span>
+              <span>Receive customized quotes based on your requirements</span>
             </li>
             <li className="flex items-center space-x-2">
               <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-              <span>Choose the best option for your solar needs</span>
+              <span>Compare quotes and choose the best solar solution</span>
             </li>
           </ul>
         </motion.div>

@@ -15,7 +15,6 @@ import {
 import Link from 'next/link';
 
 interface DashboardStats {
-  totalBills: number;
   pendingQuotes: number;
   acceptedQuotes: number;
   unreadMessages: number;
@@ -24,7 +23,6 @@ interface DashboardStats {
 export default function UserDashboard() {
   const { profile } = useAuth();
   const [stats, setStats] = useState<DashboardStats>({
-    totalBills: 0,
     pendingQuotes: 0,
     acceptedQuotes: 0,
     unreadMessages: 0
@@ -39,8 +37,7 @@ export default function UserDashboard() {
 
   const fetchDashboardStats = async () => {
     try {
-      const [billsResult, quotesResult, messagesResult] = await Promise.all([
-        supabase.from('bills').select('id').eq('user_id', profile?.id),
+      const [quotesResult, messagesResult] = await Promise.all([
         supabase.from('quotes').select('id, status').eq('user_id', profile?.id),
         supabase
           .from('messages')
@@ -52,7 +49,6 @@ export default function UserDashboard() {
       const messages = messagesResult.data || [];
 
       setStats({
-        totalBills: billsResult.data?.length || 0,
         pendingQuotes: quotes.filter(q => q.status === 'pending').length,
         acceptedQuotes: quotes.filter(q => q.status === 'accepted').length,
         unreadMessages: messages.filter(m => 
@@ -68,13 +64,6 @@ export default function UserDashboard() {
   };
 
   const quickActions = [
-    {
-      title: 'Upload Bill',
-      description: 'Upload your electricity bill for analysis',
-      icon: CloudArrowUpIcon,
-      href: '/bills/upload',
-      color: 'from-blue-500 to-blue-600'
-    },
     {
       title: 'Request Quote',
       description: 'Get solar installation quotes from sellers',
@@ -92,12 +81,6 @@ export default function UserDashboard() {
   ];
 
   const statCards = [
-    {
-      title: 'Total Bills',
-      value: stats.totalBills,
-      icon: DocumentTextIcon,
-      color: 'from-blue-500 to-blue-600'
-    },
     {
       title: 'Pending Quotes',
       value: stats.pendingQuotes,
@@ -138,7 +121,7 @@ export default function UserDashboard() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           {statCards.map((card, index) => (
             <motion.div
               key={card.title}
@@ -165,7 +148,7 @@ export default function UserDashboard() {
         {/* Quick Actions */}
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Quick Actions</h2>
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-2 gap-6">
             {quickActions.map((action, index) => (
               <motion.div
                 key={action.title}
@@ -210,11 +193,11 @@ export default function UserDashboard() {
           <div className="space-y-4">
             <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
               <div className="bg-blue-100 dark:bg-blue-900 p-2 rounded-lg">
-                <DocumentTextIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                <SunIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
               </div>
               <div className="flex-1">
-                <p className="text-sm text-gray-900 dark:text-white">Bill uploaded successfully</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">2 hours ago</p>
+                <p className="text-sm text-gray-900 dark:text-white">Quote request submitted</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">1 hour ago</p>
               </div>
             </div>
             

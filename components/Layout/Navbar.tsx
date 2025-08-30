@@ -31,7 +31,6 @@ export default function Navbar() {
         return [
           { name: 'Dashboard', href: '/dashboard', icon: SunIcon },
           { name: 'Products', href: '/products', icon: CubeIcon },
-          { name: 'Bills', href: '/bills', icon: DocumentTextIcon },
           { name: 'Quotes', href: '/quotes', icon: SunIcon },
           ...commonItems
         ];

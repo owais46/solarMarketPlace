@@ -43,6 +43,7 @@ export interface QuotationRequest {
   house_dimensions_marla: number;
   number_of_lights: number;
   number_of_fans: number;
+  avg_monthly_bill_amount?: number;
   appliances: Record<string, number>;
   additional_requirements?: string;
   status: RequestStatus;
@@ -79,18 +80,6 @@ export interface Product {
   is_active: boolean;
   created_at: string;
   updated_at: string;
-}
-
-export interface Bill {
-  id: string;
-  user_id: string;
-  file_url: string;
-  file_name: string;
-  extracted_text?: string;
-  bill_amount?: number;
-  utility_provider?: string;
-  bill_date?: string;
-  created_at: string;
 }
 
 export interface Quote {

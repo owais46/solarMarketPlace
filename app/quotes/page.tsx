@@ -237,6 +237,12 @@ export default function QuotesPage() {
                       </p>
                     </div>
                     <div>
+                      <p className="text-gray-500 dark:text-gray-400">Avg Monthly Bill</p>
+                      <p className="font-medium text-gray-900 dark:text-white">
+                        ${request.avg_monthly_bill_amount?.toLocaleString() || 'N/A'}
+                      </p>
+                    </div>
+                    <div>
                       <p className="text-gray-500 dark:text-gray-400">Responses</p>
                       <p className="font-medium text-gray-900 dark:text-white">{request.responses?.length || 0} received</p>
                     </div>

@@ -237,6 +237,12 @@ export default function RespondToQuotePage() {
               <p className="text-sm text-blue-700 dark:text-blue-300">Fans</p>
               <p className="font-semibold text-blue-900 dark:text-blue-100">{request.number_of_fans}</p>
             </div>
+            <div>
+              <p className="text-sm text-blue-700 dark:text-blue-300">Avg Monthly Bill</p>
+              <p className="font-semibold text-blue-900 dark:text-blue-100">
+                ${request.avg_monthly_bill_amount?.toLocaleString() || 'N/A'}
+              </p>
+            </div>
           </div>
           
           {Object.keys(request.appliances || {}).length > 0 && (
