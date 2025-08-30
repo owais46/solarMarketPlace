@@ -125,3 +125,14 @@ export interface Message {
   is_read: boolean;
   created_at: string;
 }
+
+export interface ConversationWithParticipants extends Conversation {
+  user: { id: string; full_name: string; avatar_url?: string };
+  seller: { id: string; full_name: string; avatar_url?: string };
+  last_message?: { content: string; sender_id: string; created_at: string };
+  unread_count: number;
+}
+
+export interface MessageWithSender extends Message {
+  sender: { id: string; full_name: string; avatar_url?: string };
+}
