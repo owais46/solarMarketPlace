@@ -7,11 +7,6 @@ import Navbar from '@/components/Layout/Navbar';
 
 const inter = Inter({ subsets: ['latin'] });
 
-// Metadata for the application
-export const metadata = {
-  title: 'SolarMarket - Solar Energy Marketplace',
-  description: 'Connect with verified solar installers, get instant quotes, and make the switch to clean energy.',
-};
 export default function RootLayout({
   children,
 }: {
