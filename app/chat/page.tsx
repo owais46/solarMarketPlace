@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ProtectedRoute from '@/components/Layout/ProtectedRoute';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase, ConversationWithParticipants, MessageWithSender } from '@/lib/supabase';
+import { RealtimeChannel } from '@supabase/supabase-js';
 import { 
   ChatBubbleLeftRightIcon,
   PaperAirplaneIcon,
@@ -27,6 +28,8 @@ export default function ChatPage() {
   const [sendingMessage, setSendingMessage] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesChannelRef = useRef<RealtimeChannel | null>(null);
+  const conversationsChannelRef = useRef<RealtimeChannel | null>(null);
 
   useEffect(() => {
     if (profile) {
@@ -48,8 +51,111 @@ export default function ChatPage() {
     if (selectedConversation) {
       fetchMessages(selectedConversation.id);
       markMessagesAsRead(selectedConversation.id);
+      subscribeToMessages(selectedConversation.id);
     }
+
+    return () => {
+      if (messagesChannelRef.current) {
+        messagesChannelRef.current.unsubscribe();
+        messagesChannelRef.current = null;
+      }
+    };
   }, [selectedConversation]);
+
+  useEffect(() => {
+    if (profile) {
+      subscribeToConversations();
+    }
+
+    return () => {
+      if (conversationsChannelRef.current) {
+        conversationsChannelRef.current.unsubscribe();
+        conversationsChannelRef.current = null;
+      }
+    };
+  }, [profile]);
+
+  const subscribeToConversations = () => {
+    if (conversationsChannelRef.current) {
+      conversationsChannelRef.current.unsubscribe();
+    }
+
+    conversationsChannelRef.current = supabase
+      .channel('conversations')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'conversations',
+          filter: `user_id=eq.${profile?.id},seller_id=eq.${profile?.id}`
+        },
+        (payload) => {
+          console.log('Conversation change:', payload);
+          fetchConversations();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'messages'
+        },
+        (payload) => {
+          console.log('Message change for conversations:', payload);
+          // Refresh conversations to update last message and unread counts
+          fetchConversations();
+        }
+      )
+      .subscribe();
+  };
+
+  const subscribeToMessages = (conversationId: string) => {
+    if (messagesChannelRef.current) {
+      messagesChannelRef.current.unsubscribe();
+    }
+
+    messagesChannelRef.current = supabase
+      .channel(`messages:${conversationId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `conversation_id=eq.${conversationId}`
+        },
+        async (payload) => {
+          console.log('New message received:', payload);
+          
+          // Fetch the complete message with sender info
+          const { data: newMessage, error } = await supabase
+            .from('messages')
+            .select(`
+              *,
+              sender:users(id, full_name, avatar_url)
+            `)
+            .eq('id', payload.new.id)
+            .single();
+
+          if (!error && newMessage) {
+            setMessages(prev => {
+              // Check if message already exists to prevent duplicates
+              const exists = prev.find(m => m.id === newMessage.id);
+              if (exists) return prev;
+              return [...prev, newMessage];
+            });
+
+            // Mark as read if not sent by current user
+            if (newMessage.sender_id !== profile?.id) {
+              markMessagesAsRead(conversationId);
+            }
+          }
+        }
+      )
+      .subscribe();
+  };
 
   useEffect(() => {
     scrollToBottom();
@@ -304,7 +410,8 @@ export default function ChatPage() {
                 created_at: new Date().toISOString() 
               },
               last_message_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
+              updated_at: new Date().toISOString(),
+              unread_count: 0
             }
           : conv
       ));
@@ -488,6 +595,16 @@ export default function ChatPage() {
 
               {/* Messages */}
               <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-gray-900">
+                {messages.length === 0 ? (
+                  <div className="flex items-center justify-center h-full">
+                    <div className="text-center">
+                      <ChatBubbleLeftRightIcon className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                      <p className="text-gray-600 dark:text-gray-400">
+                        Start the conversation by sending a message
+                      </p>
+                    </div>
+                  </div>
+                ) : (
                 <AnimatePresence>
                   {messages.map((message) => {
                     const isOwnMessage = message.sender_id === profile?.id;
@@ -529,6 +646,7 @@ export default function ChatPage() {
                     );
                   })}
                 </AnimatePresence>
+                )}
                 <div ref={messagesEndRef} />
               </div>
 
