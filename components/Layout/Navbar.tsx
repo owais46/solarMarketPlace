@@ -32,6 +32,7 @@ export default function Navbar() {
           { name: 'Dashboard', href: '/dashboard', icon: SunIcon },
           { name: 'Products', href: '/products', icon: CubeIcon },
           { name: 'Quotes', href: '/quotes', icon: SunIcon },
+          { name: 'AI Assistant', href: '/ai-assistant', icon: ChatBubbleLeftRightIcon },
           ...commonItems
         ];
       case 'seller':

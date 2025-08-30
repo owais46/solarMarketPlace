@@ -72,6 +72,13 @@ export default function UserDashboard() {
       color: 'from-orange-500 to-orange-600'
     },
     {
+      title: 'AI Assistant',
+      description: 'Get instant help with solar questions',
+      icon: ChatBubbleLeftRightIcon,
+      href: '/ai-assistant',
+      color: 'from-purple-500 to-purple-600'
+    },
+    {
       title: 'Start Chat',
       description: 'Chat with solar installation experts',
       icon: ChatBubbleLeftRightIcon,

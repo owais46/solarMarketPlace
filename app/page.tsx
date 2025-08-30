@@ -16,8 +16,8 @@ import {
 const features = [
   {
     icon: DocumentTextIcon,
-    title: 'Smart Bill Analysis',
-    description: 'Upload your electricity bills and get instant analysis with AI-powered text extraction'
+    title: 'AI Solar Assistant',
+    description: 'Get instant answers about solar energy, savings calculations, and installation guidance'
   },
   {
     icon: SunIcon,
