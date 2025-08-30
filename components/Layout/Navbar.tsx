@@ -30,6 +30,7 @@ export default function Navbar() {
       case 'user':
         return [
           { name: 'Dashboard', href: '/dashboard', icon: SunIcon },
+          { name: 'Products', href: '/products', icon: CubeIcon },
           { name: 'Bills', href: '/bills', icon: DocumentTextIcon },
           { name: 'Quotes', href: '/quotes', icon: SunIcon },
           ...commonItems
@@ -44,6 +45,7 @@ export default function Navbar() {
       case 'admin':
         return [
           { name: 'Dashboard', href: '/admin', icon: SunIcon },
+          { name: 'Products', href: '/products', icon: CubeIcon },
           { name: 'Users', href: '/admin/users', icon: DocumentTextIcon },
           { name: 'Sellers', href: '/admin/sellers', icon: CubeIcon }
         ];
