@@ -9,39 +9,21 @@ interface AIRequest {
   type?: 'conversation' | 'quick';
 }
 
-const systemPrompt = `You are SolarBot, an expert AI assistant for SolarMarket - a solar marketplace platform that connects customers with verified solar installers and sellers.
+const systemPrompt = `You are SolarBot, an AI assistant for SolarMarket - a solar marketplace platform.
 
-CONTEXT ABOUT SOLARMARKET:
-- Platform connects homeowners with solar installers and sellers
-- Users can request quotes by providing house details (size in marla, appliances, average monthly bill amount)
-- Sellers can browse quote requests and submit competitive quotes
-- Built-in chat system for direct communication between users and sellers
-- Product marketplace where sellers list solar panels, inverters, batteries, etc.
-- Role-based system: users (customers), sellers (installers), and admins
+KEEP RESPONSES SHORT AND HELPFUL. Answer directly about:
+- Solar energy benefits and savings
+- How to use SolarMarket platform features
+- Solar installation guidance
+- Product recommendations
 
-YOUR ROLE:
-- Help users understand solar energy benefits and savings
-- Guide users through the quotation process
-- Explain solar products and technologies
-- Provide general solar installation advice
-- Help navigate the SolarMarket platform features
+Platform features:
+- Request quotes by providing house details
+- Chat with verified sellers
+- Browse solar products
+- Compare quotes from installers
 
-GUIDELINES:
-- Always stay focused on solar energy topics and the SolarMarket platform
-- Provide accurate, helpful information about solar installations
-- Encourage users to request quotes through the platform
-- Suggest connecting with verified sellers for specific technical questions
-- Be friendly, professional, and knowledgeable about solar energy
-- If asked about non-solar topics, politely redirect to solar-related assistance
-
-PLATFORM FEATURES TO MENTION:
-- Quote request system with detailed house specifications
-- Chat with verified solar sellers
-- Browse solar products from trusted sellers
-- Compare multiple quotes from different installers
-- Average monthly bill analysis for savings calculations
-
-Remember: You're here to help users make informed decisions about solar energy and guide them through the SolarMarket platform.`;
+Be concise, friendly, and solar-focused.`;
 
 Deno.serve(async (req: Request) => {
   // Handle CORS preflight requests
@@ -56,70 +38,50 @@ Deno.serve(async (req: Request) => {
       throw new Error('Invalid messages format');
     }
 
-    // Get Replicate API token from environment
-    const replicateToken = Deno.env.get('REPLICATE_API_TOKEN');
-    if (!replicateToken) {
-      throw new Error('REPLICATE_API_TOKEN environment variable is not set');
+    // Get OpenAI API token from environment
+    const openaiToken = Deno.env.get('OPENAI_API_TOKEN');
+    if (!openaiToken) {
+      throw new Error('OPENAI_API_TOKEN environment variable is not set');
     }
 
-    // Prepare the conversation for Replicate
-    const conversationText = messages.map(msg => 
-      `${msg.role === 'user' ? 'Human' : 'Assistant'}: ${msg.content}`
-    ).join('\n\n');
+    // Get only the last user message to minimize tokens
+    const lastUserMessage = messages.filter(m => m.role === 'user').pop();
+    if (!lastUserMessage) {
+      throw new Error('No user message found');
+    }
 
-    const prompt = `${systemPrompt}\n\nConversation:\n${conversationText}\n\nAssistant:`;
-
-    // Call Replicate API directly using fetch
-    const response = await fetch('https://api.replicate.com/v1/predictions', {
+    // Call OpenAI API directly
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Token ${replicateToken}`,
+        'Authorization': `Bearer ${openaiToken}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        version: "2c1608e18606fad2812020dc541930f2d0495ce32eee50074220b87300bc16e1", // Llama 2 7B Chat
-        input: {
-          prompt: prompt,
-          max_new_tokens: 500,
-          temperature: 0.7,
-          top_p: 0.9,
-          repetition_penalty: 1.15,
-          system_prompt: systemPrompt
-        }
+        model: "gpt-3.5-turbo",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: lastUserMessage.content }
+        ],
+        max_tokens: 150, // Limit response length
+        temperature: 0.7,
+        top_p: 0.9
       })
     });
 
     if (!response.ok) {
       const errorData = await response.text();
-      console.error('Replicate API error:', errorData);
-      throw new Error(`Replicate API error: ${response.status}`);
+      console.error('OpenAI API error:', errorData);
+      throw new Error(`OpenAI API error: ${response.status}`);
     }
 
-    const prediction = await response.json();
+    const result = await response.json();
     
-    // Poll for completion if needed
-    let result = prediction;
-    while (result.status === 'starting' || result.status === 'processing') {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const pollResponse = await fetch(`https://api.replicate.com/v1/predictions/${result.id}`, {
-        headers: {
-          'Authorization': `Token ${replicateToken}`,
-        },
-      });
-      
-      if (!pollResponse.ok) {
-        throw new Error(`Polling error: ${pollResponse.status}`);
-      }
-      
-      result = await pollResponse.json();
+    if (!result.choices || result.choices.length === 0) {
+      throw new Error('No response from OpenAI');
     }
 
-    if (result.status === 'failed') {
-      throw new Error(`Prediction failed: ${result.error}`);
-    }
-
-    const aiResponse = result.output?.join('') || 'I apologize, but I\'m having trouble generating a response right now. Please try again.';
+    const aiResponse = result.choices[0].message.content || 'I apologize, but I\'m having trouble generating a response right now. Please try again.';
 
     return new Response(
       JSON.stringify({ response: aiResponse }),
