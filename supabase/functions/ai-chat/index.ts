@@ -56,227 +56,73 @@ Deno.serve(async (req: Request) => {
       throw new Error('Invalid messages format');
     }
 
-    // Get the latest user message
-    const userMessage = messages[messages.length - 1]?.content || '';
-    
-    // Generate a contextual response based on the user's message
-    let response = '';
-    
-    // Simple keyword-based responses for common solar questions
-    const lowerMessage = userMessage.toLowerCase();
-    
-    if (lowerMessage.includes('save') || lowerMessage.includes('saving')) {
-      response = `Great question about solar savings! The amount you can save depends on several factors:
-
-🏠 **Your Current Bill**: Higher electricity bills typically mean greater savings potential
-⚡ **System Size**: Properly sized systems can reduce bills by 70-90%
-☀️ **Location**: More sunlight = more energy production
-🔋 **Usage Patterns**: When you use electricity affects savings
-
-To get accurate savings estimates for your specific situation, I recommend:
-1. **Submit a quote request** with your house details and average monthly bill
-2. **Compare quotes** from multiple verified sellers on our platform
-3. **Chat directly** with installers to discuss your energy needs
-
-Would you like me to guide you through submitting a quote request? Our sellers can provide detailed savings calculations based on your actual usage!`;
-    } else if (lowerMessage.includes('size') || lowerMessage.includes('system')) {
-      response = `Choosing the right solar system size is crucial for maximizing your investment! Here's how to determine what you need:
-
-📏 **Key Factors**:
-- **House size** (in marla/square feet)
-- **Monthly electricity bill** amount
-- **Number of appliances** (ACs, refrigerators, etc.)
-- **Daily usage patterns**
-
-🔢 **Quick Estimation**:
-- 1 kW system typically covers $15-25/month in electricity costs
-- Average 5-marla house needs 3-5 kW system
-- Larger homes with ACs may need 7-10 kW systems
-
-📋 **Get Accurate Sizing**:
-Our verified sellers can calculate the perfect system size for you! When you submit a quote request, include:
-- Your house dimensions in marla
-- Average monthly bill amount
-- List of major appliances
-- Number of lights and fans
-
-This helps sellers provide accurate system recommendations and cost estimates. Ready to get personalized quotes?`;
-    } else if (lowerMessage.includes('install') || lowerMessage.includes('process')) {
-      response = `Solar installation is easier than you might think! Here's the typical process:
-
-🔍 **1. Site Assessment** (1-2 days)
-- Roof inspection and measurements
-- Electrical system evaluation
-- Shading analysis
-
-📋 **2. System Design** (3-5 days)
-- Custom system layout
-- Equipment selection
-- Permit applications
-
-⚡ **3. Installation** (1-3 days)
-- Panel mounting
-- Electrical connections
-- System testing
-
-🔌 **4. Grid Connection** (1-2 weeks)
-- Utility approval
-- Net metering setup
-- Final inspections
-
-⏱️ **Total Timeline**: Usually 2-6 weeks from contract to activation
-
-Our verified sellers handle all permits, inspections, and utility connections for you! They'll also provide warranties and ongoing support.
-
-Want to connect with experienced installers in your area? Submit a quote request to get started!`;
-    } else if (lowerMessage.includes('cost') || lowerMessage.includes('price')) {
-      response = `Solar costs vary based on your specific needs, but here's what to expect:
-
-💰 **Typical Price Ranges**:
-- **Residential systems**: $0.80-1.20 per watt installed
-- **3 kW system**: $2,400-3,600
-- **5 kW system**: $4,000-6,000
-- **10 kW system**: $8,000-12,000
-
-📊 **Cost Factors**:
-- System size and equipment quality
-- Roof complexity and accessibility
-- Local installation rates
-- Permits and inspections
-
-💡 **Smart Shopping Tips**:
-- Get multiple quotes to compare prices
-- Consider long-term savings, not just upfront cost
-- Ask about warranties and maintenance
-- Check installer certifications
-
-🎯 **Best Value Strategy**:
-Use our platform to get quotes from multiple verified sellers! This ensures competitive pricing and helps you find the best value for your investment.
-
-Ready to see what solar would cost for your home? Submit your details for personalized quotes!`;
-    } else if (lowerMessage.includes('benefit') || lowerMessage.includes('advantage')) {
-      response = `Solar energy offers amazing benefits for homeowners! Here are the key advantages:
-
-💰 **Financial Benefits**:
-- Reduce electricity bills by 70-90%
-- Protect against rising energy costs
-- Increase home value
-- Quick payback period (3-7 years)
-
-🌍 **Environmental Impact**:
-- Reduce carbon footprint
-- Clean, renewable energy
-- No air or water pollution
-- Help combat climate change
-
-⚡ **Energy Independence**:
-- Generate your own power
-- Reduce grid dependence
-- Backup power options with batteries
-- Stable energy costs
-
-🏠 **Home Value**:
-- Increase property value by 3-4%
-- Attractive to eco-conscious buyers
-- Modern, forward-thinking upgrade
-
-🔧 **Low Maintenance**:
-- 25+ year system lifespan
-- Minimal maintenance required
-- Strong warranties included
-
-Ready to start enjoying these benefits? Our verified sellers can show you exactly how much you'll save and the environmental impact you'll make. Submit a quote request to get started!`;
-    } else if (lowerMessage.includes('quote') || lowerMessage.includes('request')) {
-      response = `Perfect! Getting solar quotes is the best way to understand your options. Here's how our quote system works:
-
-📝 **What You'll Need**:
-- House dimensions (in marla)
-- Average monthly electricity bill
-- Number of lights and fans
-- List of major appliances (ACs, refrigerators, etc.)
-- Your contact information
-
-🎯 **What You'll Get**:
-- Multiple competitive quotes
-- Detailed system specifications
-- Savings calculations
-- Installation timelines
-- Warranty information
-
-⭐ **Why Our Platform**:
-- Only verified, certified sellers
-- Compare multiple options easily
-- Direct chat with installers
-- Transparent pricing
-- Quality guarantees
-
-🚀 **Next Steps**:
-1. Click "Request Quote" to submit your details
-2. Receive quotes from multiple sellers
-3. Compare options and ask questions
-4. Choose the best solution for your home
-
-Our sellers typically respond within 24 hours with detailed proposals. Ready to get started with your solar journey?`;
-    } else if (lowerMessage.includes('chat') || lowerMessage.includes('talk') || lowerMessage.includes('contact')) {
-      response = `Great idea! Direct communication with solar experts is one of our platform's best features:
-
-💬 **Chat Features**:
-- Real-time messaging with verified sellers
-- Ask technical questions directly
-- Discuss customization options
-- Clarify quote details
-- Schedule site visits
-
-🔍 **When to Chat**:
-- After receiving quotes
-- For technical clarifications
-- To discuss timeline and logistics
-- For post-installation support
-- To negotiate terms
-
-👥 **Who You'll Talk To**:
-- Certified solar installers
-- Technical specialists
-- Project managers
-- Customer support teams
-
-📱 **How to Start Chatting**:
-1. Browse seller profiles or quotes
-2. Click the "Chat" button
-3. Start your conversation
-4. Get instant responses
-
-Our sellers are knowledgeable professionals who can answer all your solar questions. They're here to help you make the best decision for your home!
-
-Want to start chatting with solar experts? Browse our verified sellers or submit a quote request first!`;
-    } else {
-      // Default response for general questions
-      response = `Hello! I'm SolarBot, your AI assistant for all things solar energy! 🌞
-
-I'm here to help you with:
-- Understanding solar benefits and savings
-- Choosing the right system size
-- Learning about installation processes
-- Navigating our marketplace platform
-- Connecting with verified sellers
-
-**Popular Questions:**
-- "How much can I save with solar?"
-- "What size system do I need?"
-- "How does installation work?"
-- "What are the benefits of going solar?"
-
-**Platform Features:**
-- 📋 Submit detailed quote requests
-- 💬 Chat directly with verified sellers
-- 🛒 Browse solar products and systems
-- 📊 Compare multiple quotes easily
-
-What would you like to know about solar energy or our platform? I'm here to help guide you through your solar journey!`;
+    // Get Replicate API token from environment
+    const replicateToken = Deno.env.get('REPLICATE_API_TOKEN');
+    if (!replicateToken) {
+      throw new Error('REPLICATE_API_TOKEN environment variable is not set');
     }
 
+    // Prepare the conversation for Replicate
+    const conversationText = messages.map(msg => 
+      `${msg.role === 'user' ? 'Human' : 'Assistant'}: ${msg.content}`
+    ).join('\n\n');
+
+    const prompt = `${systemPrompt}\n\nConversation:\n${conversationText}\n\nAssistant:`;
+
+    // Call Replicate API directly using fetch
+    const response = await fetch('https://api.replicate.com/v1/predictions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Token ${replicateToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        version: "2c1608e18606fad2812020dc541930f2d0495ce32eee50074220b87300bc16e1", // Llama 2 7B Chat
+        input: {
+          prompt: prompt,
+          max_new_tokens: 500,
+          temperature: 0.7,
+          top_p: 0.9,
+          repetition_penalty: 1.15,
+          system_prompt: systemPrompt
+        }
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.text();
+      console.error('Replicate API error:', errorData);
+      throw new Error(`Replicate API error: ${response.status}`);
+    }
+
+    const prediction = await response.json();
+    
+    // Poll for completion if needed
+    let result = prediction;
+    while (result.status === 'starting' || result.status === 'processing') {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      const pollResponse = await fetch(`https://api.replicate.com/v1/predictions/${result.id}`, {
+        headers: {
+          'Authorization': `Token ${replicateToken}`,
+        },
+      });
+      
+      if (!pollResponse.ok) {
+        throw new Error(`Polling error: ${pollResponse.status}`);
+      }
+      
+      result = await pollResponse.json();
+    }
+
+    if (result.status === 'failed') {
+      throw new Error(`Prediction failed: ${result.error}`);
+    }
+
+    const aiResponse = result.output?.join('') || 'I apologize, but I\'m having trouble generating a response right now. Please try again.';
+
     return new Response(
-      JSON.stringify({ response }),
+      JSON.stringify({ response: aiResponse }),
       { 
         headers: { 
           ...corsHeaders,
