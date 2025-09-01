@@ -4,7 +4,7 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE'
 };
 
-const OPENAI_API_TOKEN = Deno.env.get('OPENAI_API_TOKEN');
+const REPLICATE_API_TOKEN = Deno.env.get('REPLICATE_API_TOKEN');
 
 const SYSTEM_PROMPT = `You are SolarBot, an AI assistant for SolarMarket - a solar marketplace platform.
 
@@ -31,8 +31,8 @@ Deno.serve(async (req) => {
   }
 
   try {
-    if (!OPENAI_API_TOKEN) {
-      throw new Error('OPENAI_API_TOKEN not set');
+    if (!REPLICATE_API_TOKEN) {
+      throw new Error('REPLICATE_API_TOKEN not set');
     }
 
     const { messages, stream = true } = await req.json();
@@ -48,82 +48,97 @@ Deno.serve(async (req) => {
     }
 
     // Truncate input to reduce tokens
-    const userInput = lastUserMessage.content.slice(0, 200);
+    const userInput = String(lastUserMessage.content).slice(0, 1000);
+    const prompt = `${SYSTEM_PROMPT}\n\nUser: ${userInput}\n\nAssistant:`;
 
-    const openaiMessages = [
-      { role: 'system', content: SYSTEM_PROMPT },
-      { role: 'user', content: userInput }
-    ];
-
-    // Call OpenAI API with streaming
-    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+    // Call Replicate API
+    const replicateResponse = await fetch('https://api.replicate.com/v1/models/openai/o4-mini/predictions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${OPENAI_API_TOKEN}`,
+        'Authorization': `Token ${REPLICATE_API_TOKEN}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'gpt-3.5-turbo',
-        messages: openaiMessages,
-        max_tokens: 150,
-        temperature: 0.7,
-        stream: stream
+        input: {
+          prompt,
+          max_tokens: 150,
+          temperature: 0.4
+        }
       })
     });
 
-    if (!openaiResponse.ok) {
-      const errorText = await openaiResponse.text();
-      console.error('OpenAI API error:', errorText);
-      throw new Error(`OpenAI API error: ${openaiResponse.status}`);
+    if (!replicateResponse.ok) {
+      const errorText = await replicateResponse.text();
+      console.error('Replicate API error:', errorText);
+      throw new Error(`Replicate API error: ${replicateResponse.status}`);
     }
 
+    let prediction = await replicateResponse.json();
+
+    // Poll until completion
+    const timeoutMs = 30000;
+    const pollIntervalMs = 1000;
+    const start = Date.now();
+
+    while (prediction.status !== 'succeeded' && prediction.status !== 'failed') {
+      if (Date.now() - start > timeoutMs) {
+        throw new Error('Prediction timeout');
+      }
+
+      await new Promise(resolve => setTimeout(resolve, pollIntervalMs));
+
+      const pollResponse = await fetch(`https://api.replicate.com/v1/predictions/${prediction.id}`, {
+        headers: {
+          'Authorization': `Token ${REPLICATE_API_TOKEN}`
+        }
+      });
+
+      if (!pollResponse.ok) {
+        throw new Error('Polling failed');
+      }
+
+      prediction = await pollResponse.json();
+    }
+
+    if (prediction.status === 'failed') {
+      throw new Error(prediction.error || 'Prediction failed');
+    }
+
+    // Extract response
+    let aiResponse = '';
+    if (Array.isArray(prediction.output)) {
+      aiResponse = prediction.output.join('');
+    } else if (typeof prediction.output === 'string') {
+      aiResponse = prediction.output;
+    } else {
+      aiResponse = JSON.stringify(prediction.output || '');
+    }
+
+    aiResponse = aiResponse.trim();
+
     if (stream) {
-      // Return streaming response
+      // Simulate streaming by sending response word by word
+      const words = aiResponse.split(' ');
+      
       const readable = new ReadableStream({
         async start(controller) {
-          const reader = openaiResponse.body?.getReader();
-          if (!reader) {
-            controller.close();
-            return;
-          }
-
-          const decoder = new TextDecoder();
-          
           try {
-            while (true) {
-              const { done, value } = await reader.read();
+            for (let i = 0; i < words.length; i++) {
+              const word = words[i];
+              const isLast = i === words.length - 1;
               
-              if (done) {
-                controller.enqueue(`data: [DONE]\n\n`);
-                controller.close();
-                break;
-              }
-
-              const chunk = decoder.decode(value);
-              const lines = chunk.split('\n');
+              // Send word with space (except for last word)
+              const content = isLast ? word : word + ' ';
+              controller.enqueue(`data: ${JSON.stringify({ content })}\n\n`);
               
-              for (const line of lines) {
-                if (line.startsWith('data: ')) {
-                  const data = line.slice(6);
-                  
-                  if (data === '[DONE]') {
-                    controller.enqueue(`data: [DONE]\n\n`);
-                    continue;
-                  }
-                  
-                  try {
-                    const parsed = JSON.parse(data);
-                    const content = parsed.choices?.[0]?.delta?.content;
-                    
-                    if (content) {
-                      controller.enqueue(`data: ${JSON.stringify({ content })}\n\n`);
-                    }
-                  } catch (e) {
-                    // Skip invalid JSON
-                  }
-                }
+              // Add small delay between words for streaming effect
+              if (!isLast) {
+                await new Promise(resolve => setTimeout(resolve, 50));
               }
             }
+            
+            controller.enqueue(`data: [DONE]\n\n`);
+            controller.close();
           } catch (error) {
             console.error('Streaming error:', error);
             controller.enqueue(`data: ${JSON.stringify({ error: 'Streaming failed' })}\n\n`);
@@ -141,12 +156,9 @@ Deno.serve(async (req) => {
         }
       });
     } else {
-      // Non-streaming response (fallback)
-      const result = await openaiResponse.json();
-      const aiResponse = result.choices?.[0]?.message?.content || 'No response';
-
+      // Non-streaming response
       return new Response(JSON.stringify({
-        response: aiResponse.trim()
+        response: aiResponse
       }), {
         headers: {
           ...corsHeaders,
