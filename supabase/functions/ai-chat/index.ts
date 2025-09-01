@@ -1,4 +1,10 @@
-import { corsHeaders } from '../_shared/cors.ts';
+import Replicate from "npm:replicate@0.12.3";
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE',
+};
 
 const REPLICATE_API_TOKEN = Deno.env.get('REPLICATE_API_TOKEN');
 
@@ -58,6 +64,11 @@ Deno.serve(async (req: Request) => {
       throw new Error('Invalid messages format');
     }
 
+    // Initialize Replicate
+    const replicate = new Replicate({
+      auth: REPLICATE_API_TOKEN,
+    });
+
     // Build conversation history
     const conversationHistory = messages.map(msg => 
       `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}`
@@ -68,53 +79,16 @@ Deno.serve(async (req: Request) => {
       ? `${systemPrompt}\n\nUser Question: ${messages[messages.length - 1].content}\n\nProvide a concise, helpful response as SolarBot (max 200 words):`
       : `${systemPrompt}\n\nConversation History:\n${conversationHistory}\n\nPlease provide a helpful response as SolarBot:`;
 
-    // Call Replicate API
-    const replicateResponse = await fetch('https://api.replicate.com/v1/models/openai/gpt-5/predictions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Token ${REPLICATE_API_TOKEN}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        input: {
-          prompt,
-          max_tokens: maxTokens,
-          temperature: 0.7
-        }
-      })
+    // Generate response using Replicate
+    const output = await replicate.run("openai/gpt-5", {
+      input: {
+        prompt,
+        max_tokens: maxTokens,
+        temperature: 0.7
+      }
     });
 
-    if (!replicateResponse.ok) {
-      const errorText = await replicateResponse.text();
-      console.error('Replicate API error:', errorText);
-      throw new Error(`Replicate API error: ${replicateResponse.status}`);
-    }
-
-    const prediction = await replicateResponse.json();
-
-    // Poll for completion
-    let result = prediction;
-    while (result.status === 'starting' || result.status === 'processing') {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const pollResponse = await fetch(`https://api.replicate.com/v1/predictions/${result.id}`, {
-        headers: {
-          'Authorization': `Token ${REPLICATE_API_TOKEN}`,
-        }
-      });
-      
-      if (!pollResponse.ok) {
-        throw new Error(`Polling error: ${pollResponse.status}`);
-      }
-      
-      result = await pollResponse.json();
-    }
-
-    if (result.status === 'failed') {
-      throw new Error(result.error || 'Prediction failed');
-    }
-
-    const aiResponse = Array.isArray(result.output) ? result.output.join('') : result.output;
+    const aiResponse = Array.isArray(output) ? output.join('') : output;
 
     return new Response(
       JSON.stringify({ response: aiResponse }),
