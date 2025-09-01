@@ -121,7 +121,7 @@ export default function AIAssistantPage() {
           <SparklesIcon className="h-8 w-8 text-white" />
         </div>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-          SolarBot AI Assistant
+          SolarBot AI Assistant.
         </h1>
         <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
           Get instant answers about solar energy, installation processes, and how to use our platform effectively
