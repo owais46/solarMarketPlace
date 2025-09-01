@@ -49,19 +49,34 @@ export default function AIAssistantPage() {
     setMessages(newMessages);
     setIsLoading(true);
 
+    // Add empty assistant message for streaming
+    const assistantMessageIndex = newMessages.length;
+    setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+
     try {
-      const response = await solarAI.generateResponse(newMessages);
-      
-      setMessages(prev => [...prev, { role: 'assistant', content: response }]);
+      await solarAI.generateStreamingResponse(newMessages, (chunk: string) => {
+        setMessages(prev => {
+          const updated = [...prev];
+          updated[assistantMessageIndex] = {
+            ...updated[assistantMessageIndex],
+            content: updated[assistantMessageIndex].content + chunk
+          };
+          return updated;
+        });
+      });
     } catch (error: any) {
       console.error('Error getting AI response:', error);
       toast.error('Failed to get AI response. Please try again.');
       
       // Add error message
-      setMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: "I'm sorry, I'm having trouble responding right now. Please try again in a moment, or feel free to browse our solar products and request quotes from our verified sellers!" 
-      }]);
+      setMessages(prev => {
+        const updated = [...prev];
+        updated[assistantMessageIndex] = {
+          ...updated[assistantMessageIndex],
+          content: "I'm sorry, I'm having trouble responding right now. Please try again in a moment, or feel free to browse our solar products and request quotes from our verified sellers!"
+        };
+        return updated;
+      });
     } finally {
       setIsLoading(false);
     }
@@ -91,18 +106,39 @@ export default function AIAssistantPage() {
   ];
 
   const handleQuickQuestion = async (question: string) => {
-    setInputMessage(question);
+    if (isLoading) return;
     
     const newMessages = [...messages, { role: 'user' as const, content: question }];
     setMessages(newMessages);
     setIsLoading(true);
 
+    // Add empty assistant message for streaming
+    const assistantMessageIndex = newMessages.length;
+    setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+
     try {
-      const response = await solarAI.generateQuickResponse(question);
-      setMessages(prev => [...prev, { role: 'assistant', content: response }]);
+      await solarAI.generateStreamingResponse(newMessages, (chunk: string) => {
+        setMessages(prev => {
+          const updated = [...prev];
+          updated[assistantMessageIndex] = {
+            ...updated[assistantMessageIndex],
+            content: updated[assistantMessageIndex].content + chunk
+          };
+          return updated;
+        });
+      });
     } catch (error: any) {
       console.error('Error getting AI response:', error);
       toast.error('Failed to get AI response. Please try again.');
+      
+      setMessages(prev => {
+        const updated = [...prev];
+        updated[assistantMessageIndex] = {
+          ...updated[assistantMessageIndex],
+          content: "I'm sorry, I'm having trouble responding right now. Please try again in a moment!"
+        };
+        return updated;
+      });
     } finally {
       setIsLoading(false);
     }

@@ -47,17 +47,33 @@ export default function AIChatWidget() {
     setMessages(newMessages);
     setIsLoading(true);
 
+    // Add empty assistant message for streaming
+    const assistantMessageIndex = newMessages.length;
+    setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+
     try {
-      const response = await solarAI.generateQuickResponse(userMessage);
-      setMessages(prev => [...prev, { role: 'assistant', content: response }]);
+      await solarAI.generateStreamingResponse(newMessages, (chunk: string) => {
+        setMessages(prev => {
+          const updated = [...prev];
+          updated[assistantMessageIndex] = {
+            ...updated[assistantMessageIndex],
+            content: updated[assistantMessageIndex].content + chunk
+          };
+          return updated;
+        });
+      });
     } catch (error: any) {
       console.error('Error getting AI response:', error);
       toast.error('Failed to get AI response');
       
-      setMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: "Sorry, I'm having trouble right now. Try asking about solar quotes, products, or platform features!" 
-      }]);
+      setMessages(prev => {
+        const updated = [...prev];
+        updated[assistantMessageIndex] = {
+          ...updated[assistantMessageIndex],
+          content: "Sorry, I'm having trouble right now. Try asking about solar quotes, products, or platform features!"
+        };
+        return updated;
+      });
     } finally {
       setIsLoading(false);
     }
@@ -70,7 +86,40 @@ export default function AIChatWidget() {
   ];
 
   const handleQuickQuestion = (question: string) => {
-    setInputMessage(question);
+    if (isLoading) return;
+    
+    const newMessages = [...messages, { role: 'user' as const, content: question }];
+    setMessages(newMessages);
+    setIsLoading(true);
+
+    // Add empty assistant message for streaming
+    const assistantMessageIndex = newMessages.length;
+    setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+
+    solarAI.generateStreamingResponse(newMessages, (chunk: string) => {
+      setMessages(prev => {
+        const updated = [...prev];
+        updated[assistantMessageIndex] = {
+          ...updated[assistantMessageIndex],
+          content: updated[assistantMessageIndex].content + chunk
+        };
+        return updated;
+      });
+    }).catch((error: any) => {
+      console.error('Error getting AI response:', error);
+      toast.error('Failed to get AI response');
+      
+      setMessages(prev => {
+        const updated = [...prev];
+        updated[assistantMessageIndex] = {
+          ...updated[assistantMessageIndex],
+          content: "Sorry, I'm having trouble right now. Try asking about solar quotes, products, or platform features!"
+        };
+        return updated;
+      });
+    }).finally(() => {
+      setIsLoading(false);
+    });
   };
 
   return (

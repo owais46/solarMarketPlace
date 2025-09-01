@@ -3,7 +3,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE'
 };
-const REPLICATE_API_TOKEN = Deno.env.get('REPLICATE_API_TOKEN');
+
+const OPENAI_API_TOKEN = Deno.env.get('OPENAI_API_TOKEN');
+
 const SYSTEM_PROMPT = `You are SolarBot, an AI assistant for SolarMarket - a solar marketplace platform.
 
 KEEP RESPONSES SHORT AND HELPFUL. Answer directly about:
@@ -19,76 +21,140 @@ Platform features:
 - Compare quotes from installers
 
 Be concise, friendly, and solar-focused.`;
-Deno.serve(async (req)=>{
+
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, {
       status: 204,
       headers: corsHeaders
     });
   }
+
   try {
-    if (!REPLICATE_API_TOKEN) {
-      throw new Error('REPLICATE_API_TOKEN not set');
+    if (!OPENAI_API_TOKEN) {
+      throw new Error('OPENAI_API_TOKEN not set');
     }
-    const { messages } = await req.json();
+
+    const { messages, stream = true } = await req.json();
+    
     if (!messages || !Array.isArray(messages)) {
       throw new Error('Invalid messages format');
     }
-    // Get last user message only
-    const lastUserMessage = messages.filter((m)=>m.role === 'user').pop();
+
+    // Get last user message only to minimize tokens
+    const lastUserMessage = messages.filter(m => m.role === 'user').pop();
     if (!lastUserMessage) {
       throw new Error('No user message found');
     }
+
     // Truncate input to reduce tokens
-    const userInput = lastUserMessage.content.slice(0, 200); // Limit input length
-    const prompt = `${SYSTEM_PROMPT}\n\nUser: ${userInput}\n\nAssistant:`;
-    // Call Replicate API (using cheaper model)
-    const replicateResponse = await fetch('https://api.replicate.com/v1/models/openai/o4-mini/predictions', {
+    const userInput = lastUserMessage.content.slice(0, 200);
+
+    const openaiMessages = [
+      { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'user', content: userInput }
+    ];
+
+    // Call OpenAI API with streaming
+    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        Authorization: `Token ${REPLICATE_API_TOKEN}`,
+        'Authorization': `Bearer ${OPENAI_API_TOKEN}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        input: {
-          prompt,
-          max_tokens: 4096
-        }
+        model: 'gpt-3.5-turbo',
+        messages: openaiMessages,
+        max_tokens: 150,
+        temperature: 0.7,
+        stream: stream
       })
     });
-    if (!replicateResponse.ok) {
-      const errorText = await replicateResponse.text();
-      console.error('Replicate API error:', errorText);
-      throw new Error(`Replicate API error: ${replicateResponse.status}`);
+
+    if (!openaiResponse.ok) {
+      const errorText = await openaiResponse.text();
+      console.error('OpenAI API error:', errorText);
+      throw new Error(`OpenAI API error: ${openaiResponse.status}`);
     }
-    const prediction = await replicateResponse.json();
-    // Poll for completion (max 10 seconds)
-    let result = prediction;
-    let attempts = 0;
-    while(result.status !== 'succeeded' && result.status !== 'failed' && attempts < 10){
-      await new Promise((resolve)=>setTimeout(resolve, 1000));
-      const pollRes = await fetch(`https://api.replicate.com/v1/predictions/${result.id}`, {
-        headers: {
-          Authorization: `Token ${REPLICATE_API_TOKEN}`
+
+    if (stream) {
+      // Return streaming response
+      const readable = new ReadableStream({
+        async start(controller) {
+          const reader = openaiResponse.body?.getReader();
+          if (!reader) {
+            controller.close();
+            return;
+          }
+
+          const decoder = new TextDecoder();
+          
+          try {
+            while (true) {
+              const { done, value } = await reader.read();
+              
+              if (done) {
+                controller.enqueue(`data: [DONE]\n\n`);
+                controller.close();
+                break;
+              }
+
+              const chunk = decoder.decode(value);
+              const lines = chunk.split('\n');
+              
+              for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                  const data = line.slice(6);
+                  
+                  if (data === '[DONE]') {
+                    controller.enqueue(`data: [DONE]\n\n`);
+                    continue;
+                  }
+                  
+                  try {
+                    const parsed = JSON.parse(data);
+                    const content = parsed.choices?.[0]?.delta?.content;
+                    
+                    if (content) {
+                      controller.enqueue(`data: ${JSON.stringify({ content })}\n\n`);
+                    }
+                  } catch (e) {
+                    // Skip invalid JSON
+                  }
+                }
+              }
+            }
+          } catch (error) {
+            console.error('Streaming error:', error);
+            controller.enqueue(`data: ${JSON.stringify({ error: 'Streaming failed' })}\n\n`);
+            controller.close();
+          }
         }
       });
-      if (!pollRes.ok) throw new Error('Polling failed');
-      result = await pollRes.json();
-      attempts++;
+
+      return new Response(readable, {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive'
+        }
+      });
+    } else {
+      // Non-streaming response (fallback)
+      const result = await openaiResponse.json();
+      const aiResponse = result.choices?.[0]?.message?.content || 'No response';
+
+      return new Response(JSON.stringify({
+        response: aiResponse.trim()
+      }), {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json'
+        }
+      });
     }
-    if (result.status === 'failed') {
-      throw new Error(result.error || 'Prediction failed');
-    }
-    const aiResponse = Array.isArray(result.output) ? result.output.join('').slice(0, 200) // Truncate output
-     : result.output?.slice(0, 200) || 'No response';
-    return new Response(JSON.stringify({
-      response: aiResponse.trim()
-    }), {
-      headers: {
-        ...corsHeaders,
-        'Content-Type': 'application/json'
-      }
-    });
+
   } catch (error) {
     console.error('AI Assistant error:', error);
     return new Response(JSON.stringify({
