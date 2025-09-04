@@ -316,7 +316,7 @@ export default function RespondToQuotePage() {
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
                   <label htmlFor="estimatedCost" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Estimated Cost (USD) *
+                    Estimated Cost (PKR) *
                   </label>
                   <input
                     id="estimatedCost"
@@ -333,7 +333,7 @@ export default function RespondToQuotePage() {
 
                 <div>
                   <label htmlFor="estimatedSavings" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Monthly Savings (USD)
+                    Monthly Savings (PKR)
                   </label>
                   <input
                     id="estimatedSavings"

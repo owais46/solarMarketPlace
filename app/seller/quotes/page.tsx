@@ -263,7 +263,7 @@ export default function SellerQuotesPage() {
                     <div>
                       <p className="text-xs text-gray-500 dark:text-gray-400">Avg Monthly Bill</p>
                       <p className="text-sm font-medium text-gray-900 dark:text-white">
-                        ${request.avg_monthly_bill_amount?.toLocaleString() || 'N/A'}
+                        PKR {request.avg_monthly_bill_amount?.toLocaleString() || 'N/A'}
                       </p>
                     </div>
                     <div>
@@ -307,7 +307,7 @@ export default function SellerQuotesPage() {
                           className="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors flex items-center space-x-1"
                         >
                           <EyeIcon className="h-4 w-4" />
-                          <span>Edit Quote (${request.my_response.estimated_cost.toLocaleString()})</span>
+                          <span>Edit Quote (PKR {request.my_response.estimated_cost.toLocaleString()})</span>
                         </Link>
                         <Link
                           href={`/chat?user=${request.user_id}`}
