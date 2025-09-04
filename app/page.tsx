@@ -96,30 +96,32 @@ export default function HomePage() {
                   <div className="w-32 h-12 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse"></div>
                 </div>
               ) : (
-                user ? (
-                  <Link
-                    href={getDashboardLink()}
-                    className="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:from-orange-600 hover:to-orange-700 transition-all transform hover:scale-105 shadow-lg flex items-center space-x-2"
-                  >
-                    <span>Go to Dashboard</span>
-                    <ArrowRightIcon className="h-5 w-5" />
-                  </Link>
-                ) : (
-                  <>
+                <>
+                  {user ? (
                     <Link
-                      href="/auth/signup?role=user"
-                      className="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:from-orange-600 hover:to-orange-700 transition-all transform hover:scale-105 shadow-lg"
+                      href={getDashboardLink()}
+                      className="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:from-orange-600 hover:to-orange-700 transition-all transform hover:scale-105 shadow-lg flex items-center space-x-2"
                     >
-                      Get Solar Quote
+                      <span>Go to Dashboard</span>
+                      <ArrowRightIcon className="h-5 w-5" />
                     </Link>
-                    <Link
-                      href="/auth/signup?role=seller"
-                      className="bg-white text-orange-600 border-2 border-orange-600 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-orange-50 transition-all transform hover:scale-105 shadow-lg"
-                    >
-                      Join as Seller
-                    </Link>
-                  </>
-                )
+                  ) : (
+                    <>
+                      <Link
+                        href="/auth/signup?role=user"
+                        className="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:from-orange-600 hover:to-orange-700 transition-all transform hover:scale-105 shadow-lg"
+                      >
+                        Get Solar Quote
+                      </Link>
+                      <Link
+                        href="/auth/signup?role=seller"
+                        className="bg-white text-orange-600 border-2 border-orange-600 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-orange-50 transition-all transform hover:scale-105 shadow-lg"
+                      >
+                        Join as Seller
+                      </Link>
+                    </>
+                  )}
+                </>
               )}
             </motion.div>
           </div>
@@ -203,13 +205,7 @@ export default function HomePage() {
               href="/auth/signup"
               className="bg-white text-orange-600 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-50 transition-all transform hover:scale-105 shadow-lg"
             >
-              {initializing ? (
-                <div className="w-32 h-6 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-              ) : user ? (
-                'Go to Dashboard'
-              ) : (
-                'Get Started Now'
-              )}
+              {user ? 'Go to Dashboard' : 'Get Started Now'}
             </Link>
           </motion.div>
         </div>
