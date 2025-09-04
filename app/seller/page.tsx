@@ -35,10 +35,18 @@ export default function SellerDashboard() {
     unreadMessages: 0
   });
   const [loading, setLoading] = useState(true);
+  const [recentQuotes, setRecentQuotes] = useState<any[]>([]);
+  const [performanceData, setPerformanceData] = useState({
+    responseRate: 0,
+    satisfaction: 4.8,
+    growth: 0
+  });
 
   useEffect(() => {
     if (profile) {
       fetchSellerStats();
+      fetchRecentQuotes();
+      fetchPerformanceData();
     }
   }, [profile]);
 
@@ -85,6 +93,98 @@ export default function SellerDashboard() {
     }
   };
 
+  const fetchRecentQuotes = async () => {
+    try {
+      const { data: responses } = await supabase
+        .from('quotation_responses')
+        .select(`
+          id,
+          status,
+          estimated_cost,
+          created_at,
+          request:quotation_requests(
+            user:users(full_name)
+          )
+        `)
+        .eq('seller_id', profile?.id)
+        .order('created_at', { ascending: false })
+        .limit(3);
+
+      setRecentQuotes(responses || []);
+    } catch (error) {
+      console.error('Error fetching recent quotes:', error);
+    }
+  };
+
+  const fetchPerformanceData = async () => {
+    try {
+      // Get all seller's responses for calculations
+      const { data: allResponses } = await supabase
+        .from('quotation_responses')
+        .select('status, created_at')
+        .eq('seller_id', profile?.id);
+
+      if (allResponses && allResponses.length > 0) {
+        // Calculate response rate (accepted / total)
+        const acceptedCount = allResponses.filter(r => r.status === 'accepted').length;
+        const responseRate = Math.round((acceptedCount / allResponses.length) * 100);
+
+        // Calculate growth (responses this month vs last month)
+        const now = new Date();
+        const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        
+        const thisMonthCount = allResponses.filter(r => 
+          new Date(r.created_at) >= thisMonth
+        ).length;
+        
+        const lastMonthCount = allResponses.filter(r => {
+          const date = new Date(r.created_at);
+          return date >= lastMonth && date < thisMonth;
+        }).length;
+        
+        const growth = lastMonthCount > 0 
+          ? Math.round(((thisMonthCount - lastMonthCount) / lastMonthCount) * 100)
+          : thisMonthCount > 0 ? 100 : 0;
+
+        setPerformanceData({
+          responseRate,
+          satisfaction: 4.8, // This could be calculated from reviews if you have them
+          growth
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching performance data:', error);
+    }
+  };
+
+  const formatTimeAgo = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+    
+    if (diffInMinutes < 1) return 'Just now';
+    if (diffInMinutes < 60) return `${diffInMinutes} minutes ago`;
+    
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) return `${diffInHours} hours ago`;
+    
+    const diffInDays = Math.floor(diffInHours / 24);
+    return `${diffInDays} days ago`;
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200';
+      case 'accepted':
+        return 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200';
+      case 'rejected':
+        return 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200';
+      default:
+        return 'bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200';
+    }
+  };
   const quickActions = [
     {
       title: 'Add Product',
@@ -235,44 +335,53 @@ export default function SellerDashboard() {
             </div>
             
             <div className="space-y-4">
-              <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                <div className="bg-yellow-100 dark:bg-yellow-900 p-2 rounded-lg">
-                  <ClockIcon className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+              {loading ? (
+                [...Array(3)].map((_, i) => (
+                  <div key={i} className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg animate-pulse">
+                    <div className="bg-gray-300 dark:bg-gray-600 w-8 h-8 rounded-lg"></div>
+                    <div className="flex-1">
+                      <div className="bg-gray-300 dark:bg-gray-600 h-4 rounded mb-1"></div>
+                      <div className="bg-gray-300 dark:bg-gray-600 h-3 rounded w-32"></div>
+                    </div>
+                    <div className="bg-gray-300 dark:bg-gray-600 w-16 h-6 rounded-full"></div>
+                  </div>
+                ))
+              ) : recentQuotes.length === 0 ? (
+                <div className="text-center py-4">
+                  <p className="text-gray-600 dark:text-gray-400 text-sm">No recent quotes</p>
                 </div>
-                <div className="flex-1">
-                  <p className="text-sm text-gray-900 dark:text-white">New quote request from John Smith</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Residential solar system - 2 hours ago</p>
-                </div>
-                <span className="text-xs bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 px-2 py-1 rounded-full">
-                  Pending
-                </span>
-              </div>
-              
-              <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                <div className="bg-green-100 dark:bg-green-900 p-2 rounded-lg">
-                  <CheckCircleIcon className="h-4 w-4 text-green-600 dark:text-green-400" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm text-gray-900 dark:text-white">Quote accepted by Sarah Johnson</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Commercial installation - 5 hours ago</p>
-                </div>
-                <span className="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-1 rounded-full">
-                  Accepted
-                </span>
-              </div>
-              
-              <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                <div className="bg-blue-100 dark:bg-blue-900 p-2 rounded-lg">
-                  <SunIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm text-gray-900 dark:text-white">Quote sent to Mike Davis</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Rooftop solar panels - 1 day ago</p>
-                </div>
-                <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded-full">
-                  Sent
-                </span>
-              </div>
+              ) : (
+                recentQuotes.map((quote) => (
+                  <div key={quote.id} className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <div className={`p-2 rounded-lg ${
+                      quote.status === 'accepted' ? 'bg-green-100 dark:bg-green-900' :
+                      quote.status === 'pending' ? 'bg-yellow-100 dark:bg-yellow-900' :
+                      'bg-blue-100 dark:bg-blue-900'
+                    }`}>
+                      {quote.status === 'accepted' ? (
+                        <CheckCircleIcon className="h-4 w-4 text-green-600 dark:text-green-400" />
+                      ) : quote.status === 'pending' ? (
+                        <ClockIcon className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+                      ) : (
+                        <SunIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm text-gray-900 dark:text-white">
+                        {quote.status === 'accepted' ? 'Quote accepted by' : 
+                         quote.status === 'pending' ? 'Quote pending for' : 
+                         'Quote sent to'} {quote.request?.user?.full_name || 'Customer'}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        PKR {quote.estimated_cost?.toLocaleString()} - {formatTimeAgo(quote.created_at)}
+                      </p>
+                    </div>
+                    <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(quote.status)}`}>
+                      {quote.status.charAt(0).toUpperCase() + quote.status.slice(1)}
+                    </span>
+                  </div>
+                ))
+              )}
             </div>
           </motion.div>
 
@@ -288,31 +397,52 @@ export default function SellerDashboard() {
             <div className="space-y-6">
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Quote Response Rate</span>
-                  <span className="text-sm font-bold text-gray-900 dark:text-white">85%</span>
+                  <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Quote Acceptance Rate</span>
+                  <span className="text-sm font-bold text-gray-900 dark:text-white">
+                    {loading ? '—' : `${performanceData.responseRate}%`}
+                  </span>
                 </div>
                 <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                  <div className="bg-gradient-to-r from-green-400 to-green-600 h-2 rounded-full" style={{ width: '85%' }}></div>
+                  <div 
+                    className="bg-gradient-to-r from-green-400 to-green-600 h-2 rounded-full transition-all duration-1000" 
+                    style={{ width: `${performanceData.responseRate}%` }}
+                  ></div>
                 </div>
               </div>
               
               <div>
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Customer Satisfaction</span>
-                  <span className="text-sm font-bold text-gray-900 dark:text-white">4.8/5</span>
+                  <span className="text-sm font-bold text-gray-900 dark:text-white">
+                    {loading ? '—' : `${performanceData.satisfaction}/5`}
+                  </span>
                 </div>
                 <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                  <div className="bg-gradient-to-r from-orange-400 to-orange-600 h-2 rounded-full" style={{ width: '96%' }}></div>
+                  <div 
+                    className="bg-gradient-to-r from-orange-400 to-orange-600 h-2 rounded-full transition-all duration-1000" 
+                    style={{ width: `${(performanceData.satisfaction / 5) * 100}%` }}
+                  ></div>
                 </div>
               </div>
               
               <div>
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Monthly Growth</span>
-                  <span className="text-sm font-bold text-gray-900 dark:text-white">+12%</span>
+                  <span className={`text-sm font-bold ${
+                    performanceData.growth >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                  }`}>
+                    {loading ? '—' : `${performanceData.growth >= 0 ? '+' : ''}${performanceData.growth}%`}
+                  </span>
                 </div>
                 <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                  <div className="bg-gradient-to-r from-blue-400 to-blue-600 h-2 rounded-full" style={{ width: '70%' }}></div>
+                  <div 
+                    className={`h-2 rounded-full transition-all duration-1000 ${
+                      performanceData.growth >= 0 
+                        ? 'bg-gradient-to-r from-blue-400 to-blue-600' 
+                        : 'bg-gradient-to-r from-red-400 to-red-600'
+                    }`}
+                    style={{ width: `${Math.min(Math.abs(performanceData.growth), 100)}%` }}
+                  ></div>
                 </div>
               </div>
             </div>
@@ -322,7 +452,12 @@ export default function SellerDashboard() {
                 💡 Pro Tip
               </h3>
               <p className="text-xs text-orange-700 dark:text-orange-300">
-                Respond to quotes within 2 hours to increase your acceptance rate by 40%!
+                {performanceData.responseRate < 50 
+                  ? 'Improve your quote acceptance rate by providing detailed specifications and competitive pricing!'
+                  : performanceData.responseRate < 80
+                  ? 'Great job! Respond to quotes within 2 hours to increase your acceptance rate even more!'
+                  : 'Excellent acceptance rate! Keep up the great work with detailed and competitive quotes!'
+                }
               </p>
             </div>
           </motion.div>

@@ -28,10 +28,12 @@ export default function UserDashboard() {
     unreadMessages: 0
   });
   const [loading, setLoading] = useState(true);
+  const [recentActivities, setRecentActivities] = useState<any[]>([]);
 
   useEffect(() => {
     if (profile) {
       fetchDashboardStats();
+      fetchRecentActivities();
     }
   }, [profile]);
 
@@ -76,6 +78,94 @@ export default function UserDashboard() {
     }
   };
 
+  const fetchRecentActivities = async () => {
+    try {
+      // Get recent quotation requests
+      const { data: requests } = await supabase
+        .from('quotation_requests')
+        .select('id, created_at, status')
+        .eq('user_id', profile?.id)
+        .order('created_at', { ascending: false })
+        .limit(3);
+
+      // Get recent quotation responses
+      const { data: responses } = await supabase
+        .from('quotation_responses')
+        .select(`
+          id, 
+          created_at, 
+          status,
+          seller:users(full_name),
+          request:quotation_requests!inner(user_id)
+        `)
+        .eq('request.user_id', profile?.id)
+        .order('created_at', { ascending: false })
+        .limit(3);
+
+      // Get recent messages
+      const { data: messages } = await supabase
+        .from('messages')
+        .select(`
+          id,
+          created_at,
+          sender_id,
+          conversation:conversations!inner(user_id, seller_id),
+          sender:users(full_name)
+        `)
+        .eq('conversation.user_id', profile?.id)
+        .neq('sender_id', profile?.id)
+        .order('created_at', { ascending: false })
+        .limit(2);
+
+      // Combine and sort activities
+      const activities = [
+        ...(requests || []).map(req => ({
+          type: 'quote_request',
+          message: 'Quote request submitted',
+          time: req.created_at,
+          icon: SunIcon,
+          color: 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400'
+        })),
+        ...(responses || []).map(res => ({
+          type: res.status === 'accepted' ? 'quote_accepted' : 'quote_received',
+          message: res.status === 'accepted' 
+            ? `Quote accepted from ${res.seller?.full_name || 'seller'}`
+            : `New quote received from ${res.seller?.full_name || 'seller'}`,
+          time: res.created_at,
+          icon: res.status === 'accepted' ? SunIcon : SunIcon,
+          color: res.status === 'accepted' 
+            ? 'bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400'
+            : 'bg-orange-100 dark:bg-orange-900 text-orange-600 dark:text-orange-400'
+        })),
+        ...(messages || []).map(msg => ({
+          type: 'message',
+          message: `New message from ${msg.sender?.full_name || 'seller'}`,
+          time: msg.created_at,
+          icon: ChatBubbleLeftRightIcon,
+          color: 'bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-400'
+        }))
+      ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()).slice(0, 3);
+
+      setRecentActivities(activities);
+    } catch (error) {
+      console.error('Error fetching recent activities:', error);
+    }
+  };
+
+  const formatTimeAgo = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+    
+    if (diffInMinutes < 1) return 'Just now';
+    if (diffInMinutes < 60) return `${diffInMinutes} minutes ago`;
+    
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) return `${diffInHours} hours ago`;
+    
+    const diffInDays = Math.floor(diffInHours / 24);
+    return `${diffInDays} days ago`;
+  };
   const quickActions = [
     {
       title: 'Request Quote',
@@ -211,35 +301,33 @@ export default function UserDashboard() {
           </div>
           
           <div className="space-y-4">
-            <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <div className="bg-blue-100 dark:bg-blue-900 p-2 rounded-lg">
-                <SunIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            {loading ? (
+              [...Array(3)].map((_, i) => (
+                <div key={i} className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg animate-pulse">
+                  <div className="bg-gray-300 dark:bg-gray-600 w-8 h-8 rounded-lg"></div>
+                  <div className="flex-1">
+                    <div className="bg-gray-300 dark:bg-gray-600 h-4 rounded mb-1"></div>
+                    <div className="bg-gray-300 dark:bg-gray-600 h-3 rounded w-20"></div>
+                  </div>
+                </div>
+              ))
+            ) : recentActivities.length === 0 ? (
+              <div className="text-center py-4">
+                <p className="text-gray-600 dark:text-gray-400 text-sm">No recent activities</p>
               </div>
-              <div className="flex-1">
-                <p className="text-sm text-gray-900 dark:text-white">Quote request submitted</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">1 hour ago</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <div className="bg-green-100 dark:bg-green-900 p-2 rounded-lg">
-                <SunIcon className="h-4 w-4 text-green-600 dark:text-green-400" />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm text-gray-900 dark:text-white">New quote received from SolarPro</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">5 hours ago</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <div className="bg-purple-100 dark:bg-purple-900 p-2 rounded-lg">
-                <ChatBubbleLeftRightIcon className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm text-gray-900 dark:text-white">New message from installer</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">1 day ago</p>
-              </div>
-            </div>
+            ) : (
+              recentActivities.map((activity, index) => (
+                <div key={index} className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                  <div className={`p-2 rounded-lg ${activity.color}`}>
+                    <activity.icon className="h-4 w-4" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm text-gray-900 dark:text-white">{activity.message}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{formatTimeAgo(activity.time)}</p>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </motion.div>
       </div>
