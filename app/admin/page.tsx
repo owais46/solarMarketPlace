@@ -13,17 +13,51 @@ import {
   ChartBarIcon,
   ExclamationTriangleIcon,
   CheckCircleIcon,
-  ClockIcon
+  ClockIcon,
+  ServerIcon,
+  CpuChipIcon
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  LineElement,
+  PointElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement,
+} from 'chart.js';
+import { Bar, Line, Doughnut } from 'react-chartjs-2';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  LineElement,
+  PointElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement
+);
 
 interface AdminStats {
   totalUsers: number;
   totalSellers: number;
   totalQuotes: number;
   totalRevenue: number;
-  pendingApprovals: number;
-  activeIssues: number;
+  activeProducts: number;
+  systemHealth: number;
+}
+
+interface ChartData {
+  userGrowth: number[];
+  quoteActivity: number[];
+  revenueData: number[];
+  labels: string[];
 }
 
 export default function AdminDashboard() {
@@ -33,23 +67,33 @@ export default function AdminDashboard() {
     totalSellers: 0,
     totalQuotes: 0,
     totalRevenue: 0,
-    pendingApprovals: 0,
-    activeIssues: 0
+    activeProducts: 0,
+    systemHealth: 98
+  });
+  const [chartData, setChartData] = useState<ChartData>({
+    userGrowth: [],
+    quoteActivity: [],
+    revenueData: [],
+    labels: []
   });
   const [loading, setLoading] = useState(true);
+  const [recentActivity, setRecentActivity] = useState<any[]>([]);
 
   useEffect(() => {
     if (profile) {
       fetchAdminStats();
+      fetchChartData();
+      fetchRecentActivity();
     }
   }, [profile]);
 
   const fetchAdminStats = async () => {
     try {
-      const [usersResult, sellersResult, quotesResult] = await Promise.all([
+      const [usersResult, sellersResult, quotesResult, productsResult] = await Promise.all([
         supabase.from('users').select('id').eq('role', 'user'),
         supabase.from('users').select('id').eq('role', 'seller'),
-        supabase.from('quotes').select('id, status, estimated_cost')
+        supabase.from('quotation_responses').select('id, status, estimated_cost'),
+        supabase.from('products').select('id').eq('is_active', true)
       ]);
 
       const quotes = quotesResult.data || [];
@@ -61,14 +105,169 @@ export default function AdminDashboard() {
         totalSellers: sellersResult.data?.length || 0,
         totalQuotes: quotes.length,
         totalRevenue,
-        pendingApprovals: quotes.filter(q => q.status === 'pending').length,
-        activeIssues: 3 // Mock data for demo
+        activeProducts: productsResult.data?.length || 0,
+        systemHealth: 98
       });
     } catch (error) {
       console.error('Error fetching admin stats:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchChartData = async () => {
+    try {
+      // Get last 7 days data
+      const last7Days = Array.from({ length: 7 }, (_, i) => {
+        const date = new Date();
+        date.setDate(date.getDate() - (6 - i));
+        return date;
+      });
+
+      const labels = last7Days.map(date => 
+        date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      );
+
+      // Fetch user registrations by day
+      const userGrowthPromises = last7Days.map(async (date) => {
+        const nextDay = new Date(date);
+        nextDay.setDate(nextDay.getDate() + 1);
+        
+        const { count } = await supabase
+          .from('users')
+          .select('*', { count: 'exact', head: true })
+          .gte('created_at', date.toISOString())
+          .lt('created_at', nextDay.toISOString());
+        
+        return count || 0;
+      });
+
+      // Fetch quote activity by day
+      const quoteActivityPromises = last7Days.map(async (date) => {
+        const nextDay = new Date(date);
+        nextDay.setDate(nextDay.getDate() + 1);
+        
+        const { count } = await supabase
+          .from('quotation_responses')
+          .select('*', { count: 'exact', head: true })
+          .gte('created_at', date.toISOString())
+          .lt('created_at', nextDay.toISOString());
+        
+        return count || 0;
+      });
+
+      // Fetch revenue by day
+      const revenuePromises = last7Days.map(async (date) => {
+        const nextDay = new Date(date);
+        nextDay.setDate(nextDay.getDate() + 1);
+        
+        const { data } = await supabase
+          .from('quotation_responses')
+          .select('estimated_cost')
+          .eq('status', 'accepted')
+          .gte('created_at', date.toISOString())
+          .lt('created_at', nextDay.toISOString());
+        
+        return (data || []).reduce((sum, item) => sum + (item.estimated_cost || 0), 0);
+      });
+
+      const [userGrowth, quoteActivity, revenueData] = await Promise.all([
+        Promise.all(userGrowthPromises),
+        Promise.all(quoteActivityPromises),
+        Promise.all(revenuePromises)
+      ]);
+
+      setChartData({
+        userGrowth,
+        quoteActivity,
+        revenueData,
+        labels
+      });
+    } catch (error) {
+      console.error('Error fetching chart data:', error);
+    }
+  };
+
+  const fetchRecentActivity = async () => {
+    try {
+      // Get recent user registrations
+      const { data: recentUsers } = await supabase
+        .from('users')
+        .select('id, full_name, role, created_at')
+        .order('created_at', { ascending: false })
+        .limit(3);
+
+      // Get recent quotes
+      const { data: recentQuotes } = await supabase
+        .from('quotation_responses')
+        .select(`
+          id, 
+          status, 
+          estimated_cost, 
+          created_at,
+          seller:users!seller_id(full_name)
+        `)
+        .order('created_at', { ascending: false })
+        .limit(3);
+
+      // Get recent products
+      const { data: recentProducts } = await supabase
+        .from('products')
+        .select(`
+          id, 
+          name, 
+          created_at,
+          seller:users!seller_id(full_name)
+        `)
+        .order('created_at', { ascending: false })
+        .limit(2);
+
+      // Combine activities
+      const activities = [
+        ...(recentUsers || []).map(user => ({
+          type: 'user_signup',
+          message: `${user.full_name} joined as ${user.role}`,
+          time: user.created_at,
+          icon: UserGroupIcon,
+          color: 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400'
+        })),
+        ...(recentQuotes || []).map(quote => ({
+          type: 'quote_activity',
+          message: `Quote ${quote.status} by ${quote.seller?.full_name || 'seller'} (PKR ${quote.estimated_cost?.toLocaleString()})`,
+          time: quote.created_at,
+          icon: DocumentTextIcon,
+          color: quote.status === 'accepted' 
+            ? 'bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400'
+            : 'bg-orange-100 dark:bg-orange-900 text-orange-600 dark:text-orange-400'
+        })),
+        ...(recentProducts || []).map(product => ({
+          type: 'product_added',
+          message: `${product.seller?.full_name || 'Seller'} added "${product.name}"`,
+          time: product.created_at,
+          icon: BuildingStorefrontIcon,
+          color: 'bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-400'
+        }))
+      ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()).slice(0, 5);
+
+      setRecentActivity(activities);
+    } catch (error) {
+      console.error('Error fetching recent activity:', error);
+    }
+  };
+
+  const formatTimeAgo = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+    
+    if (diffInMinutes < 1) return 'Just now';
+    if (diffInMinutes < 60) return `${diffInMinutes} minutes ago`;
+    
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) return `${diffInHours} hours ago`;
+    
+    const diffInDays = Math.floor(diffInHours / 24);
+    return `${diffInDays} days ago`;
   };
 
   const quickActions = [
@@ -78,13 +277,6 @@ export default function AdminDashboard() {
       icon: UserGroupIcon,
       href: '/admin/users',
       color: 'from-blue-500 to-blue-600'
-    },
-    {
-      title: 'Seller Approvals',
-      description: 'Review pending seller applications',
-      icon: CheckCircleIcon,
-      href: '/admin/sellers',
-      color: 'from-green-500 to-green-600'
     },
     {
       title: 'System Reports',
@@ -126,43 +318,72 @@ export default function AdminDashboard() {
     },
     {
       title: 'Platform Revenue',
-      value: `$${stats.totalRevenue.toLocaleString()}`,
+      value: `PKR ${stats.totalRevenue.toLocaleString()}`,
       icon: CurrencyDollarIcon,
       color: 'from-purple-500 to-purple-600',
       change: '+18% this month'
     }
   ];
 
-  const recentActivity = [
-    {
-      type: 'user_signup',
-      message: 'New user registered: john.doe@email.com',
-      time: '2 minutes ago',
-      icon: UserGroupIcon,
-      color: 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400'
+  // Chart configurations
+  const userGrowthChart = {
+    labels: chartData.labels,
+    datasets: [
+      {
+        label: 'New Users',
+        data: chartData.userGrowth,
+        backgroundColor: 'rgba(59, 130, 246, 0.5)',
+        borderColor: 'rgb(59, 130, 246)',
+        borderWidth: 2,
+        tension: 0.4
+      }
+    ]
+  };
+
+  const quoteActivityChart = {
+    labels: chartData.labels,
+    datasets: [
+      {
+        label: 'Quotes',
+        data: chartData.quoteActivity,
+        backgroundColor: 'rgba(249, 115, 22, 0.5)',
+        borderColor: 'rgb(249, 115, 22)',
+        borderWidth: 1
+      }
+    ]
+  };
+
+  const userTypeChart = {
+    labels: ['Users', 'Sellers'],
+    datasets: [
+      {
+        data: [stats.totalUsers, stats.totalSellers],
+        backgroundColor: [
+          'rgba(59, 130, 246, 0.8)',
+          'rgba(16, 185, 129, 0.8)'
+        ],
+        borderColor: [
+          'rgb(59, 130, 246)',
+          'rgb(16, 185, 129)'
+        ],
+        borderWidth: 2
+      }
+    ]
+  };
+
+  const chartOptions = {
+    responsive: true,
+    plugins: {
+      legend: {
+        position: 'top' as const,
+      },
     },
-    {
-      type: 'seller_approval',
-      message: 'Seller application approved: SolarTech Solutions',
-      time: '15 minutes ago',
-      icon: CheckCircleIcon,
-      color: 'bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400'
+    scales: {
+      y: {
+        beginAtZero: true,
+      },
     },
-    {
-      type: 'quote_created',
-      message: 'New quote request submitted',
-      time: '1 hour ago',
-      icon: DocumentTextIcon,
-      color: 'bg-orange-100 dark:bg-orange-900 text-orange-600 dark:text-orange-400'
-    },
-    {
-      type: 'support_ticket',
-      message: 'Support ticket created: Payment issue',
-      time: '2 hours ago',
-      icon: ExclamationTriangleIcon,
-      color: 'bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-400'
-    }
-  ];
+  };
 
   return (
     <ProtectedRoute allowedRoles={['admin']}>
@@ -182,32 +403,6 @@ export default function AdminDashboard() {
             </p>
           </motion.div>
         </div>
-
-        {/* Alert Banner */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.1 }}
-          className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-8"
-        >
-          <div className="flex items-center">
-            <ExclamationTriangleIcon className="h-5 w-5 text-yellow-600 dark:text-yellow-400 mr-3" />
-            <div>
-              <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
-                {stats.pendingApprovals} seller applications pending approval
-              </p>
-              <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-1">
-                Review pending applications to maintain platform quality
-              </p>
-            </div>
-            <Link
-              href="/admin/sellers"
-              className="ml-auto bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded text-sm font-medium transition-colors"
-            >
-              Review Now
-            </Link>
-          </div>
-        </motion.div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -237,10 +432,52 @@ export default function AdminDashboard() {
           ))}
         </div>
 
+        {/* Charts Section */}
+        <div className="grid lg:grid-cols-3 gap-8 mb-8">
+          {/* User Growth Chart */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-100 dark:border-gray-700"
+          >
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">User Growth (Last 7 Days)</h2>
+            <div className="h-64">
+              <Line data={userGrowthChart} options={chartOptions} />
+            </div>
+          </motion.div>
+
+          {/* User Distribution */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.3 }}
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-100 dark:border-gray-700"
+          >
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">User Distribution</h2>
+            <div className="h-64 flex items-center justify-center">
+              <Doughnut data={userTypeChart} />
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Quote Activity Chart */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.4 }}
+          className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-100 dark:border-gray-700 mb-8"
+        >
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Quote Activity (Last 7 Days)</h2>
+          <div className="h-64">
+            <Bar data={quoteActivityChart} options={chartOptions} />
+          </div>
+        </motion.div>
+
         {/* Quick Actions */}
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Admin Actions</h2>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid md:grid-cols-3 gap-6">
             {quickActions.map((action, index) => (
               <motion.div
                 key={action.title}
@@ -285,17 +522,35 @@ export default function AdminDashboard() {
             </div>
             
             <div className="space-y-4">
-              {recentActivity.map((activity, index) => (
-                <div key={index} className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                  <div className={`p-2 rounded-lg ${activity.color}`}>
-                    <activity.icon className="h-4 w-4" />
+              {loading ? (
+                [...Array(5)].map((_, i) => (
+                  <div key={i} className="animate-pulse">
+                    <div className="flex items-center space-x-3 p-3">
+                      <div className="w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded-lg"></div>
+                      <div className="flex-1">
+                        <div className="bg-gray-300 dark:bg-gray-600 h-4 rounded mb-1"></div>
+                        <div className="bg-gray-300 dark:bg-gray-600 h-3 rounded w-20"></div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <p className="text-sm text-gray-900 dark:text-white">{activity.message}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">{activity.time}</p>
-                  </div>
+                ))
+              ) : recentActivity.length === 0 ? (
+                <div className="text-center py-4">
+                  <p className="text-gray-600 dark:text-gray-400 text-sm">No recent activity</p>
                 </div>
-              ))}
+              ) : (
+                recentActivity.map((activity, index) => (
+                  <div key={index} className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <div className={`p-2 rounded-lg ${activity.color}`}>
+                      <activity.icon className="h-4 w-4" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm text-gray-900 dark:text-white">{activity.message}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{formatTimeAgo(activity.time)}</p>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </motion.div>
 
@@ -342,12 +597,18 @@ export default function AdminDashboard() {
 
             <div className="mt-6 grid grid-cols-2 gap-4">
               <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                <p className="text-2xl font-bold text-green-600 dark:text-green-400">0</p>
-                <p className="text-xs text-green-700 dark:text-green-300">Critical Issues</p>
+                <div className="flex items-center justify-center mb-1">
+                  <ServerIcon className="h-5 w-5 text-green-600 dark:text-green-400" />
+                </div>
+                <p className="text-lg font-bold text-green-600 dark:text-green-400">{stats.activeProducts}</p>
+                <p className="text-xs text-green-700 dark:text-green-300">Active Products</p>
               </div>
-              <div className="text-center p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
-                <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{stats.activeIssues}</p>
-                <p className="text-xs text-yellow-700 dark:text-yellow-300">Active Tickets</p>
+              <div className="text-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                <div className="flex items-center justify-center mb-1">
+                  <CpuChipIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <p className="text-lg font-bold text-blue-600 dark:text-blue-400">{stats.systemHealth}%</p>
+                <p className="text-xs text-blue-700 dark:text-blue-300">System Health</p>
               </div>
             </div>
           </motion.div>
