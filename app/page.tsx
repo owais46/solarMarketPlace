@@ -89,35 +89,37 @@ export default function HomePage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.2 }}
               className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-6"
-            ) : initializing ? (
-              <div className="flex space-x-6">
-                <div className="w-32 h-12 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse"></div>
-                <div className="w-32 h-12 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse"></div>
-              </div>
-            ) : (
-              {user ? (
-                <Link
-                  href={getDashboardLink()}
-                  className="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:from-orange-600 hover:to-orange-700 transition-all transform hover:scale-105 shadow-lg flex items-center space-x-2"
-                >
-                  <span>Go to Dashboard</span>
-                  <ArrowRightIcon className="h-5 w-5" />
-                </Link>
+            >
+              {initializing ? (
+                <div className="flex space-x-6">
+                  <div className="w-32 h-12 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse"></div>
+                  <div className="w-32 h-12 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse"></div>
+                </div>
               ) : (
-                <>
+                user ? (
                   <Link
-                    href="/auth/signup?role=user"
-                    className="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:from-orange-600 hover:to-orange-700 transition-all transform hover:scale-105 shadow-lg"
+                    href={getDashboardLink()}
+                    className="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:from-orange-600 hover:to-orange-700 transition-all transform hover:scale-105 shadow-lg flex items-center space-x-2"
                   >
-                    Get Solar Quote
+                    <span>Go to Dashboard</span>
+                    <ArrowRightIcon className="h-5 w-5" />
                   </Link>
-                  <Link
-                    href="/auth/signup?role=seller"
-                    className="bg-white text-orange-600 border-2 border-orange-600 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-orange-50 transition-all transform hover:scale-105 shadow-lg"
-                  >
-                    Join as Seller
-                  </Link>
-                </>
+                ) : (
+                  <>
+                    <Link
+                      href="/auth/signup?role=user"
+                      className="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:from-orange-600 hover:to-orange-700 transition-all transform hover:scale-105 shadow-lg"
+                    >
+                      Get Solar Quote
+                    </Link>
+                    <Link
+                      href="/auth/signup?role=seller"
+                      className="bg-white text-orange-600 border-2 border-orange-600 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-orange-50 transition-all transform hover:scale-105 shadow-lg"
+                    >
+                      Join as Seller
+                    </Link>
+                  </>
+                )
               )}
             </motion.div>
           </div>
