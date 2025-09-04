@@ -37,24 +37,37 @@ export default function UserDashboard() {
 
   const fetchDashboardStats = async () => {
     try {
-      const [quotesResult, messagesResult] = await Promise.all([
-        supabase.from('quotes').select('id, status').eq('user_id', profile?.id),
+      const [quotationResponsesResult, messagesResult] = await Promise.all([
+        // Get quotation responses for user's requests
+        supabase
+          .from('quotation_responses')
+          .select(`
+            id, 
+            status,
+            request:quotation_requests!inner(user_id)
+          `)
+          .eq('request.user_id', profile?.id),
+        // Get unread messages in conversations where user is participant
         supabase
           .from('messages')
-          .select('id, is_read, conversation:conversations(user_id)')
+          .select(`
+            id, 
+            is_read, 
+            sender_id,
+            conversation:conversations!inner(user_id, seller_id)
+          `)
           .eq('is_read', false)
+          .neq('sender_id', profile?.id)
+          .eq('conversation.user_id', profile?.id)
       ]);
 
-      const quotes = quotesResult.data || [];
+      const responses = quotationResponsesResult.data || [];
       const messages = messagesResult.data || [];
 
       setStats({
-        pendingQuotes: quotes.filter(q => q.status === 'pending').length,
-        acceptedQuotes: quotes.filter(q => q.status === 'accepted').length,
-        unreadMessages: messages.filter(m => 
-          //@ts-ignore
-          m.conversation?.user_id === profile?.id
-        ).length
+        pendingQuotes: responses.filter(r => r.status === 'pending').length,
+        acceptedQuotes: responses.filter(r => r.status === 'accepted').length,
+        unreadMessages: messages.length
       });
     } catch (error) {
       console.error('Error fetching dashboard stats:', error);

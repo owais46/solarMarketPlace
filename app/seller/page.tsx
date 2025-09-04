@@ -44,29 +44,39 @@ export default function SellerDashboard() {
 
   const fetchSellerStats = async () => {
     try {
-      const [productsResult, quotesResult, messagesResult] = await Promise.all([
+      const [productsResult, quotationResponsesResult, messagesResult] = await Promise.all([
+        // Get seller's products
         supabase.from('products').select('id').eq('seller_id', profile?.id),
-        supabase.from('quotes').select('id, status, estimated_cost').eq('seller_id', profile?.id),
+        // Get seller's quotation responses
+        supabase
+          .from('quotation_responses')
+          .select('id, status, estimated_cost')
+          .eq('seller_id', profile?.id),
+        // Get unread messages in conversations where seller is participant
         supabase
           .from('messages')
-          .select('id, is_read, conversation:conversations(seller_id)')
+          .select(`
+            id, 
+            is_read, 
+            sender_id,
+            conversation:conversations!inner(user_id, seller_id)
+          `)
           .eq('is_read', false)
+          .neq('sender_id', profile?.id)
+          .eq('conversation.seller_id', profile?.id)
       ]);
 
-      const quotes = quotesResult.data || [];
+      const responses = quotationResponsesResult.data || [];
       const messages = messagesResult.data || [];
-      const completedQuotes = quotes.filter(q => q.status === 'accepted');
-      const totalRevenue = completedQuotes.reduce((sum, quote) => sum + (quote.estimated_cost || 0), 0);
+      const completedSales = responses.filter(r => r.status === 'accepted');
+      const totalRevenue = completedSales.reduce((sum, response) => sum + (response.estimated_cost || 0), 0);
 
       setStats({
         totalProducts: productsResult.data?.length || 0,
-        activeQuotes: quotes.filter(q => q.status === 'pending').length,
-        completedSales: completedQuotes.length,
+        activeQuotes: responses.filter(r => r.status === 'pending').length,
+        completedSales: completedSales.length,
         totalRevenue,
-        unreadMessages: messages.filter(m => 
-          //@ts-ignore
-          m.conversation?.seller_id === profile?.id
-        ).length
+        unreadMessages: messages.length
       });
     } catch (error) {
       console.error('Error fetching seller stats:', error);
