@@ -123,7 +123,7 @@ export default function SellerDashboard() {
     },
     {
       title: 'Total Revenue',
-      value: `$${stats.totalRevenue.toLocaleString()}`,
+      value: `PKR ${stats.totalRevenue.toLocaleString()}`,
       icon: CurrencyDollarIcon,
       color: 'from-purple-500 to-purple-600',
       change: '+12% this month'

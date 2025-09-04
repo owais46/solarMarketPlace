@@ -39,7 +39,7 @@ const features = [
 const stats = [
   { value: '10,000+', label: 'Happy Customers' },
   { value: '500+', label: 'Verified Sellers' },
-  { value: '$2M+', label: 'Savings Generated' },
+  { value: 'PKR 2M+', label: 'Savings Generated' },
   { value: '98%', label: 'Satisfaction Rate' }
 ];
 
@@ -220,4 +220,4 @@ export default function HomePage() {
       </footer>
     </div>
   );
-} 
+}
