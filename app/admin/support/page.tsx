@@ -55,7 +55,7 @@ export default function AdminSupportPage() {
         .from('support_tickets')
         .select(`
           *,
-          user:users(full_name, email, avatar_url)
+          user:users!support_tickets_user_id_fkey(full_name, email, avatar_url)
         `)
         .order('created_at', { ascending: false });
 
