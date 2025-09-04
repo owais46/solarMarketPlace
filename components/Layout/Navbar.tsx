@@ -8,14 +8,16 @@ import {
   SunIcon, 
   Bars3Icon, 
   XMarkIcon,
-  ChatBubbleLeftRightIcon,
+  LifebuoyIcon, 
+  UserGroupIcon,
+  ChartBarIcon,
   DocumentTextIcon,
   CubeIcon
 } from '@heroicons/react/24/outline';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Navbar() {
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, signOut, initializing } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
 
@@ -45,9 +47,9 @@ export default function Navbar() {
       case 'admin':
         return [
           { name: 'Dashboard', href: '/admin', icon: SunIcon },
-          { name: 'Products', href: '/products', icon: CubeIcon },
-          { name: 'Users', href: '/admin/users', icon: DocumentTextIcon },
-          { name: 'Sellers', href: '/admin/sellers', icon: CubeIcon }
+          { name: 'User Management', href: '/admin/users', icon: UserGroupIcon },
+          { name: 'System Reports', href: '/admin/reports', icon: ChartBarIcon },
+          { name: 'Support', href: '/admin/support', icon: LifebuoyIcon }
         ];
       default:
         return [];
@@ -69,7 +71,7 @@ export default function Navbar() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
-            {user && getNavItems().map((item) => {
+            {!initializing && user && getNavItems().map((item) => {
               const Icon = item.icon;
               return (
                 <Link
@@ -83,7 +85,9 @@ export default function Navbar() {
               );
             })}
 
-            {user ? (
+            {initializing ? (
+              <div className="w-32 h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+            ) : user ? (
               <UserDropdown />
             ) : (
               <div className="flex items-center space-x-4">
@@ -105,7 +109,7 @@ export default function Navbar() {
 
           {/* Mobile menu button */}
           <div className="md:hidden flex items-center">
-            {user && <UserDropdown />}
+            {!initializing && user && <UserDropdown />}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className="text-gray-700 dark:text-gray-300 hover:text-orange-600 dark:hover:text-orange-400 p-2 ml-2"
@@ -130,7 +134,7 @@ export default function Navbar() {
             className="md:hidden bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700"
           >
             <div className="px-2 pt-2 pb-3 space-y-1">
-              {user && getNavItems().map((item) => {
+              {!initializing && user && getNavItems().map((item) => {
                 const Icon = item.icon;
                 return (
                   <Link
@@ -145,7 +149,7 @@ export default function Navbar() {
                 );
               })}
 
-              {!user && (
+              {!initializing && !user && (
                 <div className="border-t border-gray-200 pt-2 space-y-1">
                   <Link
                     href="/auth/signin"

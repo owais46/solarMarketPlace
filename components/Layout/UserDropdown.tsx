@@ -25,7 +25,7 @@ import { LogOutIcon } from 'lucide-react';
 
 export default function UserDropdown() {
   const { profile, signOut } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+  const { theme, toggleTheme, isLoading: themeLoading } = useTheme();
 
   if (!profile) return null;
 
@@ -99,7 +99,9 @@ export default function UserDropdown() {
         
         <DropdownMenuItem className="flex items-center justify-between">
           <div className="flex items-center">
-            {theme === 'dark' ? (
+            {themeLoading ? (
+              <div className="w-4 h-4 bg-gray-300 dark:bg-gray-600 rounded mr-2 animate-pulse"></div>
+            ) : theme === 'dark' ? (
               <MoonIcon className="mr-2 h-4 w-4" />
             ) : (
               <SunIcon className="mr-2 h-4 w-4" />
@@ -109,6 +111,7 @@ export default function UserDropdown() {
           <Switch
             checked={theme === 'dark'}
             onCheckedChange={toggleTheme}
+            disabled={themeLoading}
             className="ml-2"
           />
         </DropdownMenuItem>

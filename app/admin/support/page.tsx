@@ -4,26 +4,35 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import ProtectedRoute from '@/components/Layout/ProtectedRoute';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/lib/supabase';
 import { 
   ExclamationTriangleIcon,
   CheckCircleIcon,
   ClockIcon,
   ChatBubbleLeftRightIcon,
   MagnifyingGlassIcon,
-  FunnelIcon
+  FunnelIcon,
+  PaperAirplaneIcon
 } from '@heroicons/react/24/outline';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import toast from 'react-hot-toast';
 
 interface SupportTicket {
   id: string;
-  user_name: string;
-  user_email: string;
+  user_id: string;
   subject: string;
   message: string;
   status: 'open' | 'in_progress' | 'resolved';
   priority: 'low' | 'medium' | 'high';
+  admin_response?: string;
+  admin_id?: string;
   created_at: string;
   updated_at: string;
+  user: {
+    full_name: string;
+    email: string;
+    avatar_url?: string;
+  };
 }
 
 export default function AdminSupportPage() {
@@ -33,83 +42,111 @@ export default function AdminSupportPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'open' | 'in_progress' | 'resolved'>('all');
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
+  const [adminResponse, setAdminResponse] = useState('');
+  const [responding, setResponding] = useState(false);
 
   useEffect(() => {
-    // Mock data for demonstration
-    const mockTickets: SupportTicket[] = [
-      {
-        id: '1',
-        user_name: 'Ahmed Khan',
-        user_email: 'ahmed@example.com',
-        subject: 'Payment Issue with Solar Quote',
-        message: 'I am having trouble processing payment for my accepted solar quote. The payment gateway keeps showing an error.',
-        status: 'open',
-        priority: 'high',
-        created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-        updated_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
-      },
-      {
-        id: '2',
-        user_name: 'Fatima Ali',
-        user_email: 'fatima@example.com',
-        subject: 'Unable to Upload Bill Document',
-        message: 'The system is not accepting my electricity bill PDF. I have tried multiple times but it keeps failing.',
-        status: 'in_progress',
-        priority: 'medium',
-        created_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-        updated_at: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString()
-      },
-      {
-        id: '3',
-        user_name: 'Solar Solutions Ltd',
-        user_email: 'contact@solarsolutions.com',
-        subject: 'Seller Dashboard Not Loading',
-        message: 'Our seller dashboard is not loading properly. We cannot see our products or manage quotes.',
-        status: 'open',
-        priority: 'high',
-        created_at: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
-        updated_at: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString()
-      },
-      {
-        id: '4',
-        user_name: 'Muhammad Hassan',
-        user_email: 'hassan@example.com',
-        subject: 'Question about Solar Installation',
-        message: 'I have some questions about the solar installation process and timeline. Can someone help me understand the steps?',
-        status: 'resolved',
-        priority: 'low',
-        created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-        updated_at: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString()
-      },
-      {
-        id: '5',
-        user_name: 'Aisha Malik',
-        user_email: 'aisha@example.com',
-        subject: 'Chat Feature Not Working',
-        message: 'I cannot send messages to sellers through the chat feature. The messages are not being delivered.',
-        status: 'in_progress',
-        priority: 'medium',
-        created_at: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
-        updated_at: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString()
-      }
-    ];
-
-    setTickets(mockTickets);
-    setLoading(false);
+    fetchTickets();
   }, []);
 
-  const updateTicketStatus = (ticketId: string, newStatus: SupportTicket['status']) => {
-    setTickets(prev => prev.map(ticket => 
-      ticket.id === ticketId 
-        ? { ...ticket, status: newStatus, updated_at: new Date().toISOString() }
-        : ticket
-    ));
+  const fetchTickets = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('support_tickets')
+        .select(`
+          *,
+          user:users(full_name, email, avatar_url)
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setTickets(data || []);
+    } catch (error: any) {
+      console.error('Error fetching tickets:', error);
+      toast.error('Failed to load support tickets');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateTicketStatus = async (ticketId: string, newStatus: SupportTicket['status']) => {
+    try {
+      const { error } = await supabase
+        .from('support_tickets')
+        .update({ 
+          status: newStatus,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', ticketId);
+
+      if (error) throw error;
+
+      setTickets(prev => prev.map(ticket => 
+        ticket.id === ticketId 
+          ? { ...ticket, status: newStatus, updated_at: new Date().toISOString() }
+          : ticket
+      ));
+
+      if (selectedTicket?.id === ticketId) {
+        setSelectedTicket(prev => prev ? { ...prev, status: newStatus } : null);
+      }
+
+      toast.success(`Ticket marked as ${newStatus.replace('_', ' ')}`);
+    } catch (error: any) {
+      console.error('Error updating ticket:', error);
+      toast.error('Failed to update ticket status');
+    }
+  };
+
+  const submitAdminResponse = async () => {
+    if (!selectedTicket || !adminResponse.trim()) return;
+
+    setResponding(true);
+    try {
+      const { error } = await supabase
+        .from('support_tickets')
+        .update({ 
+          admin_response: adminResponse.trim(),
+          admin_id: profile?.id,
+          status: 'in_progress',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', selectedTicket.id);
+
+      if (error) throw error;
+
+      setTickets(prev => prev.map(ticket => 
+        ticket.id === selectedTicket.id 
+          ? { 
+              ...ticket, 
+              admin_response: adminResponse.trim(),
+              admin_id: profile?.id,
+              status: 'in_progress',
+              updated_at: new Date().toISOString()
+            }
+          : ticket
+      ));
+
+      setSelectedTicket(prev => prev ? { 
+        ...prev, 
+        admin_response: adminResponse.trim(),
+        status: 'in_progress'
+      } : null);
+
+      setAdminResponse('');
+      toast.success('Response sent successfully');
+    } catch (error: any) {
+      console.error('Error sending response:', error);
+      toast.error('Failed to send response');
+    } finally {
+      setResponding(false);
+    }
   };
 
   const filteredTickets = tickets.filter(ticket => {
     const matchesSearch = ticket.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         ticket.user_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         ticket.user_email.toLowerCase().includes(searchTerm.toLowerCase());
+                         ticket.user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         ticket.user.email.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === 'all' || ticket.status === filterStatus;
     return matchesSearch && matchesStatus;
   });
@@ -346,8 +383,9 @@ export default function AdminSupportPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
                       <Avatar className="h-10 w-10">
+                        <AvatarImage src={ticket.user.avatar_url} alt={ticket.user.full_name} />
                         <AvatarFallback className="bg-gradient-to-r from-blue-400 to-blue-600 text-white text-sm font-semibold">
-                          {ticket.user_name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                          {ticket.user.full_name.split(' ').map(n => n[0]).join('').toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
                       
@@ -361,7 +399,7 @@ export default function AdminSupportPage() {
                           </span>
                         </div>
                         <p className="text-sm text-gray-600 dark:text-gray-400">
-                          {ticket.user_name} • {ticket.user_email}
+                          {ticket.user.full_name} • {ticket.user.email}
                         </p>
                         <p className="text-xs text-gray-500 dark:text-gray-500 mt-1 line-clamp-1">
                           {ticket.message}
@@ -408,16 +446,17 @@ export default function AdminSupportPage() {
               <div className="space-y-6">
                 <div className="flex items-center space-x-4">
                   <Avatar className="h-12 w-12">
+                    <AvatarImage src={selectedTicket.user.avatar_url} alt={selectedTicket.user.full_name} />
                     <AvatarFallback className="bg-gradient-to-r from-blue-400 to-blue-600 text-white font-semibold">
-                      {selectedTicket.user_name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                      {selectedTicket.user.full_name.split(' ').map(n => n[0]).join('').toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <div>
                     <h4 className="text-lg font-medium text-gray-900 dark:text-white">
-                      {selectedTicket.user_name}
+                      {selectedTicket.user.full_name}
                     </h4>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                      {selectedTicket.user_email}
+                      {selectedTicket.user.email}
                     </p>
                   </div>
                 </div>
@@ -449,6 +488,45 @@ export default function AdminSupportPage() {
                   <div className="text-sm text-gray-500 dark:text-gray-400">
                     Created {formatTimeAgo(selectedTicket.created_at)}
                   </div>
+                </div>
+
+                {/* Admin Response Section */}
+                <div>
+                  <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Admin Response</h5>
+                  {selectedTicket.admin_response ? (
+                    <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border-l-4 border-blue-500 mb-4">
+                      <p className="text-blue-800 dark:text-blue-200 text-sm whitespace-pre-wrap">
+                        {selectedTicket.admin_response}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <textarea
+                        value={adminResponse}
+                        onChange={(e) => setAdminResponse(e.target.value)}
+                        placeholder="Type your response to the customer..."
+                        rows={4}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      />
+                      <button
+                        onClick={submitAdminResponse}
+                        disabled={responding || !adminResponse.trim()}
+                        className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                      >
+                        {responding ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                            <span>Sending...</span>
+                          </>
+                        ) : (
+                          <>
+                            <PaperAirplaneIcon className="h-4 w-4" />
+                            <span>Send Response</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  )}
                 </div>
                 
                 <div className="flex space-x-3">

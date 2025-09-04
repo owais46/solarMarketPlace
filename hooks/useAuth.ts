@@ -8,6 +8,7 @@ export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [initializing, setInitializing] = useState(true);
 
   useEffect(() => {
     const initSession = async () => {
@@ -27,6 +28,7 @@ export function useAuth() {
         console.log('👤 User found:', currentUser.id);
         await fetchProfile(currentUser.id);
       } else {
+        setInitializing(false);
         setLoading(false);
       }
     };
@@ -43,6 +45,7 @@ export function useAuth() {
           await fetchProfile(currentUser.id);
         } else {
           setProfile(null);
+          setInitializing(false);
           setLoading(false);
         }
       }
@@ -98,6 +101,7 @@ export function useAuth() {
     } catch (err: any) {
       console.error('❌ Error fetching/creating profile:', err.message || err);
     } finally {
+      setInitializing(false);
       setLoading(false);
     }
   };
@@ -157,6 +161,7 @@ export function useAuth() {
     user,
     profile,
     loading,
+    initializing,
     signUp,
     signIn,
     signOut

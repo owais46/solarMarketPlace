@@ -125,3 +125,16 @@ export interface ConversationWithParticipants extends Conversation {
 export interface MessageWithSender extends Message {
   sender: { id: string; full_name: string; avatar_url?: string };
 }
+
+export interface SupportTicket {
+  id: string;
+  user_id: string;
+  subject: string;
+  message: string;
+  status: 'open' | 'in_progress' | 'resolved';
+  priority: 'low' | 'medium' | 'high';
+  admin_response?: string;
+  admin_id?: string;
+  created_at: string;
+  updated_at: string;
+}

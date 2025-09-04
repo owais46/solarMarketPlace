@@ -44,7 +44,7 @@ const stats = [
 ];
 
 export default function HomePage() {
-  const { user, profile } = useAuth();
+  const { user, profile, initializing } = useAuth();
 
   const getDashboardLink = () => {
     switch (profile?.role) {
@@ -89,7 +89,12 @@ export default function HomePage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.2 }}
               className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-6"
-            >
+            ) : initializing ? (
+              <div className="flex space-x-6">
+                <div className="w-32 h-12 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse"></div>
+                <div className="w-32 h-12 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse"></div>
+              </div>
+            ) : (
               {user ? (
                 <Link
                   href={getDashboardLink()}
@@ -196,7 +201,13 @@ export default function HomePage() {
               href="/auth/signup"
               className="bg-white text-orange-600 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-50 transition-all transform hover:scale-105 shadow-lg"
             >
-              {user ? 'Go to Dashboard' : 'Get Started Now'}
+              {initializing ? (
+                <div className="w-32 h-6 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+              ) : user ? (
+                'Go to Dashboard'
+              ) : (
+                'Get Started Now'
+              )}
             </Link>
           </motion.div>
         </div>
