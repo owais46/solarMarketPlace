@@ -128,7 +128,7 @@ export default function ProfilePage() {
       toast.success('Profile updated successfully!');
       setEditing(false);
       
-      // Refresh the page to get updated profile data
+      // Trigger a re-fetch of the profile data
       window.location.reload();
     } catch (error: any) {
       console.error('Error updating profile:', error);
@@ -351,7 +351,7 @@ export default function ProfilePage() {
             </div>
 
             <div className="p-6">
-              <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-6">
                 {/* Avatar URL */}
                 {editing && (
                   <div>
@@ -492,7 +492,49 @@ export default function ProfilePage() {
                     </div>
                   </div>
                 </div>
-              </form>
+              </div>
+              
+              {/* Save Button - Outside form but triggers handleSubmit */}
+              {editing && (
+                <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-600">
+                  <div className="flex justify-end space-x-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditing(false);
+                        setFormData({
+                          full_name: profile.full_name || '',
+                          email: profile.email || '',
+                          phone: profile.phone || '',
+                          address: profile.address || '',
+                          avatar_url: profile.avatar_url || ''
+                        });
+                      }}
+                      className="px-4 py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSubmit}
+                      disabled={loading}
+                      className="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-6 py-2 rounded-lg font-medium hover:from-orange-600 hover:to-orange-700 transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                    >
+                      {loading ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          <span>Saving...</span>
+                        </>
+                      ) : (
+                        <>
+                          <CheckIcon className="h-4 w-4" />
+                          <span>Save Changes</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </motion.div>
