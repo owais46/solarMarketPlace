@@ -92,35 +92,31 @@ export default function HomePage() {
             >
               {initializing ? (
                 <div className="flex space-x-6">
-                  <div className="w-32 h-12 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse"></div>
-                  <div className="w-32 h-12 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse"></div>
+                  <div className="w-40 h-14 bg-gray-200 rounded-lg animate-pulse"></div>
+                  <div className="w-40 h-14 bg-gray-200 rounded-lg animate-pulse"></div>
                 </div>
+              ) : user ? (
+                <Link
+                  href={getDashboardLink()}
+                  className="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:from-orange-600 hover:to-orange-700 transition-all transform hover:scale-105 shadow-lg flex items-center space-x-2"
+                >
+                  <span>Go to Dashboard</span>
+                  <ArrowRightIcon className="h-5 w-5" />
+                </Link>
               ) : (
                 <>
-                  {user ? (
-                    <Link
-                      href={getDashboardLink()}
-                      className="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:from-orange-600 hover:to-orange-700 transition-all transform hover:scale-105 shadow-lg flex items-center space-x-2"
-                    >
-                      <span>Go to Dashboard</span>
-                      <ArrowRightIcon className="h-5 w-5" />
-                    </Link>
-                  ) : (
-                    <>
-                      <Link
-                        href="/auth/signup?role=user"
-                        className="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:from-orange-600 hover:to-orange-700 transition-all transform hover:scale-105 shadow-lg"
-                      >
-                        Get Solar Quote
-                      </Link>
-                      <Link
-                        href="/auth/signup?role=seller"
-                        className="bg-white text-orange-600 border-2 border-orange-600 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-orange-50 transition-all transform hover:scale-105 shadow-lg"
-                      >
-                        Join as Seller
-                      </Link>
-                    </>
-                  )}
+                  <Link
+                    href="/auth/signup?role=user"
+                    className="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:from-orange-600 hover:to-orange-700 transition-all transform hover:scale-105 shadow-lg"
+                  >
+                    Get Solar Quote
+                  </Link>
+                  <Link
+                    href="/auth/signup?role=seller"
+                    className="bg-white text-orange-600 border-2 border-orange-600 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-orange-50 transition-all transform hover:scale-105 shadow-lg"
+                  >
+                    Join as Seller
+                  </Link>
                 </>
               )}
             </motion.div>
@@ -201,12 +197,16 @@ export default function HomePage() {
               Join thousands of homeowners who have made the switch to clean, renewable energy. 
               Start your solar journey today!
             </p>
-            <Link
-              href="/auth/signup"
-              className="bg-white text-orange-600 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-50 transition-all transform hover:scale-105 shadow-lg"
-            >
-              {user ? 'Go to Dashboard' : 'Get Started Now'}
-            </Link>
+            {initializing ? (
+              <div className="w-48 h-14 bg-white/20 rounded-lg animate-pulse mx-auto"></div>
+            ) : (
+              <Link
+                href={user ? getDashboardLink() : "/auth/signup"}
+                className="bg-white text-orange-600 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-50 transition-all transform hover:scale-105 shadow-lg"
+              >
+                {user ? 'Go to Dashboard' : 'Get Started Now'}
+              </Link>
+            )}
           </motion.div>
         </div>
       </section>
