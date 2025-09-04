@@ -239,7 +239,7 @@ export default function QuotesPage() {
                     <div>
                       <p className="text-gray-500 dark:text-gray-400">Avg Monthly Bill</p>
                       <p className="font-medium text-gray-900 dark:text-white">
-                        ${request.avg_monthly_bill_amount?.toLocaleString() || 'N/A'}
+                        PKR {request.avg_monthly_bill_amount?.toLocaleString() || 'N/A'}
                       </p>
                     </div>
                     <div>
@@ -293,14 +293,14 @@ export default function QuotesPage() {
                             <div>
                               <p className="text-xs text-gray-500 dark:text-gray-400">Estimated Cost</p>
                               <p className="text-lg font-bold text-gray-900 dark:text-white">
-                                ${response.estimated_cost.toLocaleString()}
+                                PKR {response.estimated_cost.toLocaleString()}
                               </p>
                             </div>
                             {response.estimated_savings && (
                               <div>
                                 <p className="text-xs text-gray-500 dark:text-gray-400">Monthly Savings</p>
                                 <p className="text-lg font-bold text-green-600 dark:text-green-400">
-                                  ${response.estimated_savings.toLocaleString()}
+                                  PKR {response.estimated_savings.toLocaleString()}
                                 </p>
                               </div>
                             )}

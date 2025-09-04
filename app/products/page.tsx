@@ -253,7 +253,7 @@ export default function ProductsPage() {
 
                 <div className="flex items-center justify-between">
                   <span className="text-2xl font-bold text-gray-900 dark:text-white">
-                    ${product.price?.toLocaleString()}
+                    PKR {product.price?.toLocaleString()}
                   </span>
                   
                   <button className="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-4 py-2 rounded-lg font-medium hover:from-orange-600 hover:to-orange-700 transition-all transform hover:scale-105 flex items-center space-x-1">
