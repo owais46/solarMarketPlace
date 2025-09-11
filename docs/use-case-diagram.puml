@@ -1,0 +1,254 @@
+@startuml SolarMarket Use Case Diagram
+
+!theme plain
+skinparam backgroundColor #FAFAFA
+skinparam actor {
+  BackgroundColor #E3F2FD
+  BorderColor #1976D2
+  FontColor #1976D2
+}
+skinparam usecase {
+  BackgroundColor #FFF3E0
+  BorderColor #F57C00
+  FontColor #E65100
+}
+skinparam rectangle {
+  BackgroundColor #FFFFFF
+  BorderColor #CCCCCC
+}
+
+title SolarMarket Platform - Use Case Diagram
+
+' Define actors
+actor "Customer\n(User)" as Customer #LightBlue
+actor "Solar Seller" as Seller #LightGreen
+actor "Platform Admin" as Admin #LightCoral
+actor "SolarBot AI" as AI #LightYellow
+
+' Define system boundary
+rectangle "SolarMarket Platform" {
+  
+  ' Authentication & Profile Management
+  package "Authentication & Profile" {
+    usecase "Sign Up" as UC1
+    usecase "Sign In" as UC2
+    usecase "Sign Out" as UC3
+    usecase "Manage Profile" as UC4
+    usecase "Update Personal Info" as UC5
+    usecase "Change Password" as UC6
+  }
+  
+  ' Customer Use Cases
+  package "Customer Features" {
+    usecase "Browse Products" as UC7
+    usecase "Search Products" as UC8
+    usecase "Filter by Category" as UC9
+    usecase "Request Solar Quote" as UC10
+    usecase "View Quote Responses" as UC11
+    usecase "Accept/Reject Quote" as UC12
+    usecase "Compare Quotes" as UC13
+    usecase "Chat with Sellers" as UC14
+    usecase "View Dashboard" as UC15
+    usecase "Submit Support Ticket" as UC16
+    usecase "Track Ticket Status" as UC17
+  }
+  
+  ' Seller Use Cases
+  package "Seller Features" {
+    usecase "Add Products" as UC18
+    usecase "Edit Products" as UC19
+    usecase "Manage Product Catalog" as UC20
+    usecase "View Quote Requests" as UC21
+    usecase "Submit Quote Response" as UC22
+    usecase "Edit Quote Response" as UC23
+    usecase "Chat with Customers" as UC24
+    usecase "View Seller Dashboard" as UC25
+    usecase "Track Performance" as UC26
+    usecase "Manage Business Profile" as UC27
+  }
+  
+  ' Admin Use Cases
+  package "Admin Features" {
+    usecase "View Admin Dashboard" as UC28
+    usecase "Manage Users" as UC29
+    usecase "Edit User Accounts" as UC30
+    usecase "Delete Users" as UC31
+    usecase "View System Reports" as UC32
+    usecase "Generate Analytics" as UC33
+    usecase "Export Data" as UC34
+    usecase "Manage Support Tickets" as UC35
+    usecase "Respond to Tickets" as UC36
+    usecase "Monitor System Health" as UC37
+  }
+  
+  ' AI Assistant Use Cases
+  package "AI Assistant Features" {
+    usecase "Provide Solar Guidance" as UC38
+    usecase "Calculate Savings" as UC39
+    usecase "Answer Platform Questions" as UC40
+    usecase "Assist with Navigation" as UC41
+    usecase "Real-time Chat Support" as UC42
+  }
+  
+  ' Communication System
+  package "Communication System" {
+    usecase "Start Conversation" as UC43
+    usecase "Send Messages" as UC44
+    usecase "Receive Messages" as UC45
+    usecase "Mark as Read" as UC46
+    usecase "View Chat History" as UC47
+  }
+  
+  ' Quotation System
+  package "Quotation System" {
+    usecase "Create Quote Request" as UC48
+    usecase "Specify Requirements" as UC49
+    usecase "Add House Details" as UC50
+    usecase "List Appliances" as UC51
+    usecase "Set Timeline Preferences" as UC52
+    usecase "Provide Cost Estimate" as UC53
+    usecase "Include System Specs" as UC54
+    usecase "Add Warranty Details" as UC55
+  }
+}
+
+' Customer relationships
+Customer --> UC1 : registers
+Customer --> UC2 : logs in
+Customer --> UC3 : logs out
+Customer --> UC4 : manages
+Customer --> UC5 : updates
+Customer --> UC6 : changes
+Customer --> UC7 : browses
+Customer --> UC8 : searches
+Customer --> UC9 : filters
+Customer --> UC10 : requests
+Customer --> UC11 : views
+Customer --> UC12 : accepts/rejects
+Customer --> UC13 : compares
+Customer --> UC14 : initiates
+Customer --> UC15 : accesses
+Customer --> UC16 : submits
+Customer --> UC17 : tracks
+
+' Seller relationships
+Seller --> UC1 : registers
+Seller --> UC2 : logs in
+Seller --> UC3 : logs out
+Seller --> UC4 : manages
+Seller --> UC18 : creates
+Seller --> UC19 : modifies
+Seller --> UC20 : organizes
+Seller --> UC21 : reviews
+Seller --> UC22 : provides
+Seller --> UC23 : updates
+Seller --> UC24 : communicates
+Seller --> UC25 : monitors
+Seller --> UC26 : analyzes
+Seller --> UC27 : maintains
+
+' Admin relationships
+Admin --> UC2 : logs in
+Admin --> UC3 : logs out
+Admin --> UC4 : manages
+Admin --> UC28 : oversees
+Admin --> UC29 : administers
+Admin --> UC30 : modifies
+Admin --> UC31 : removes
+Admin --> UC32 : reviews
+Admin --> UC33 : creates
+Admin --> UC34 : downloads
+Admin --> UC35 : handles
+Admin --> UC36 : resolves
+Admin --> UC37 : monitors
+
+' AI Assistant relationships
+AI --> UC38 : provides
+AI --> UC39 : calculates
+AI --> UC40 : answers
+AI --> UC41 : guides
+AI --> UC42 : supports
+
+' Communication relationships
+Customer --> UC43 : initiates
+Seller --> UC43 : starts
+Customer --> UC44 : sends
+Seller --> UC44 : sends
+Customer --> UC45 : receives
+Seller --> UC45 : receives
+Customer --> UC46 : marks
+Seller --> UC46 : marks
+Customer --> UC47 : reviews
+Seller --> UC47 : reviews
+
+' Quotation system relationships
+Customer --> UC48 : creates
+Customer --> UC49 : defines
+Customer --> UC50 : provides
+Customer --> UC51 : specifies
+Customer --> UC52 : sets
+Seller --> UC53 : estimates
+Seller --> UC54 : details
+Seller --> UC55 : includes
+
+' Include relationships
+UC10 ..> UC48 : includes
+UC10 ..> UC49 : includes
+UC10 ..> UC50 : includes
+UC10 ..> UC51 : includes
+
+UC22 ..> UC53 : includes
+UC22 ..> UC54 : includes
+UC22 ..> UC55 : includes
+
+UC14 ..> UC43 : includes
+UC14 ..> UC44 : includes
+UC24 ..> UC43 : includes
+UC24 ..> UC44 : includes
+
+UC32 ..> UC33 : includes
+UC32 ..> UC34 : includes
+
+' Extend relationships
+UC38 ..> UC39 : extends
+UC40 ..> UC41 : extends
+
+' Notes
+note right of Customer
+  Primary users seeking
+  solar energy solutions
+  for their homes
+end note
+
+note right of Seller
+  Verified solar installers
+  and product suppliers
+  offering services
+end note
+
+note right of Admin
+  Platform administrators
+  managing system operations
+  and user support
+end note
+
+note right of AI
+  Intelligent assistant
+  providing 24/7 solar
+  guidance and support
+end note
+
+note bottom of "SolarMarket Platform"
+  Comprehensive solar marketplace platform
+  built with Next.js, Supabase, and AI integration
+  
+  Key Technologies:
+  • Next.js 13 (App Router)
+  • Supabase (Database & Auth)
+  • TypeScript (Type Safety)
+  • Tailwind CSS (Styling)
+  • Chart.js (Analytics)
+  • Framer Motion (Animations)
+end note
+
+@enduml
